@@ -340,10 +340,10 @@ function liveCalc() {
         <div class="s">${f.muddat_oy} oy · 28% yillik</div></div>
       <div><div class="k">Qarz yuki (DTI)</div>
         <div class="v ${cls(dti, pol.MAX_DTI)}">${pct(dti)}</div>
-        <div class="s">shift ${pct(pol.MAX_DTI, 0)}</div></div>
+        <div class="s">chegara ${pct(pol.MAX_DTI, 0)}</div></div>
       <div><div class="k">Erkin pul</div>
         <div class="v ${free >= 0 ? 'ok' : 'no'}">${nf.format(Math.round(free))}</div>
-        <div class="s">PTI ${pct(pti)} · shift ${pct(pol.MAX_PTI, 0)}</div></div>
+        <div class="s">PTI ${pct(pti)} · chegara ${pct(pol.MAX_PTI, 0)}</div></div>
     </div>`;
 
   const gap = (!f.applicant_id && f.deklaratsiya_daromad > 0)
@@ -602,20 +602,19 @@ function renderDecision(d, saved) {
           <p class="verdict-lead">${esc(m.bosh_gap)}</p>
           ${factRow(m.raqamlar.tavsiya > 0
             ? [['Tavsiya etilgan', money(m.raqamlar.tavsiya)],
-               ['Oylik to’lov', money(m.raqamlar.oylik_tolov)],
                ['Muddat', m.raqamlar.muddat_oy + ' oy'],
-               ['Defolt ehtimoli', pct(d.pd, 2)]]
-            : [['So’ralgan', money(m.raqamlar.soralgan)],
-               ['Berilishi mumkin', '0 so’m'],
-               ['Defolt ehtimoli', pct(d.pd, 2)]])}
+               ['Oylik to‘lov', money(m.raqamlar.oylik_tolov)],
+               ['To‘lay olmaslik ehtimoli', pct(d.pd, 2)]]
+            : [['So‘ralgan', money(m.raqamlar.soralgan)],
+               ['Berilishi mumkin', money(0)],
+               ['To‘lay olmaslik ehtimoli', pct(d.pd, 2)]])}
         </div>
-        <div class="verdict-ring">${scoreRing(d.ball)}
-          <span class="code faint">PD ${pct(d.pd, 2)}</span></div>
+        <div class="verdict-ring">${scoreRing(d.ball)}</div>
       </div>
     </div>
 
     <div class="actions">
-      <div class="hd"><h3>Nima qilsam bo’ladi?</h3>
+      <div class="hd"><h3>Nima qilsam bo‘ladi?</h3>
         <span class="label">amaliy qadamlar</span></div>
       <ol>${(m.keyingi_qadam || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol>
     </div>
@@ -624,9 +623,9 @@ function renderDecision(d, saved) {
       <div><div class="label" style="margin-bottom:10px">Foydangizga ishladi</div>
         ${good ? `<ul class="good">${good}</ul>`
                : '<p class="data faint">Sezilarli ijobiy omil topilmadi.</p>'}</div>
-      <div><div class="label" style="margin-bottom:10px">To’sqinlik qildi</div>
+      <div><div class="label" style="margin-bottom:10px">To‘sqinlik qildi</div>
         ${bad ? `<ul class="bad">${bad}</ul>`
-              : '<p class="data faint">Salbiy omil yo’q.</p>'}</div>
+              : '<p class="data faint">Salbiy omil yo‘q.</p>'}</div>
     </div>` : ''}
 
     <details class="tech">
@@ -644,7 +643,7 @@ function renderDecision(d, saved) {
             <span class="label">Omillar hissasi</span>
             <span class="label">${neg} salbiy / ${om.length - neg} ijobiy</span></div>
           <p class="code faint" style="margin-bottom:10px">Neytral tayanch
-            ${d.skoring.neytral_ball.toFixed(0)} ball + hissalar yig’indisi =
+            ${d.skoring.neytral_ball.toFixed(0)} ball + hissalar yig‘indisi =
             ${d.ball.toFixed(0)} ball</p>
           ${contribRows(om)}
         </div>
@@ -652,23 +651,23 @@ function renderDecision(d, saved) {
           <div class="card flat">
             <div class="card-head"><h3>Limit</h3>
               <span class="label">binary search</span></div>
-            <div class="between"><span class="dim">So’ralgan</span>
+            <div class="between"><span class="dim">So‘ralgan</span>
               <b class="num">${money(d.sorlgan_summa)}</b></div>
             <div class="between"><span class="dim">Tavsiya etilgan</span>
               <b class="num">${money(d.tavsiya_summa)}</b></div>
-            <div class="between"><span class="dim">To’lov qobiliyati limiti</span>
+            <div class="between"><span class="dim">To‘lov qobiliyati limiti</span>
               <span class="num">${money(L.tolov_qobiliyati_limiti)}</span></div>
             <div class="between"><span class="dim">Cheklovchi omil</span>
               <span>${esc(L.cheklovchi_omil)}</span></div>
-            <div class="between"><span class="dim">Iteratsiya / qo’riqchi</span>
+            <div class="between"><span class="dim">Iteratsiya / qo‘riqchi</span>
               <span class="num">${L.iteratsiya} / ${L.qoriqchi_qadam}</span></div>
           </div>
           <div class="card flat">
-            <div class="card-head"><h3>Ko’rsatkichlar</h3>
+            <div class="card-head"><h3>Ko‘rsatkichlar</h3>
               <span class="label">majburiy algoritmlar</span></div>
             <div class="between"><span class="dim">DTI (jami yuk)</span>
               <b class="num">${pct(k.dti)}</b></div>
-            <div class="between"><span class="dim">PTI (yangi to’lov)</span>
+            <div class="between"><span class="dim">PTI (yangi to‘lov)</span>
               <span class="num">${pct(k.pti)}</span></div>
             <div class="between"><span class="dim">Mavjud DTI</span>
               <span class="num">${pct(k.dti_current)}</span></div>
@@ -691,7 +690,7 @@ function renderDecision(d, saved) {
         </div>
         ${saved ? `<p class="code faint">jurnal yozuvi #${d.decision_id} ·
           skorkarta ${esc(d.scorecard_version)} · xodim ${esc(state.user.login)} ·
-          yozuv o’zgarmas</p>` : ''}
+          yozuv o‘zgarmas</p>` : ''}
       </div>
     </details>
   </div>`;
@@ -763,7 +762,7 @@ async function loadUnderwriter() {
                  [no, 'var(--risk-hi)']])}
         <div class="donut-leg">
           ${[['Ma’qullangan', ok, 'var(--risk-low)'],
-             ["Qo‘lda ko‘rish", mid, 'var(--risk-mid)'],
+             ["Qo‘lda ko‘rib chiqish", mid, 'var(--risk-mid)'],
              ['Rad etilgan', no, 'var(--risk-hi)']].map(([l, v, c]) => `
             <div><i style="background:${c}"></i><span style="flex:1">${l}</span>
               <b class="num">${nf.format(v)}</b>
@@ -845,11 +844,11 @@ function holdoutBlock(h, m) {
           <span class="num">${m.auc_cv ?? '—'}</span></div>
         <div class="between"><span class="dim">Gini / KS</span>
           <span class="num">${h.gini} / ${h.ks}</span></div>
-        <div class="between"><span class="dim">Shift (haqiqiy PD ning AUC si)</span>
+        <div class="between"><span class="dim">Yuqori chegara (haqiqiy PD ning AUC si)</span>
           <span class="num">${h.ceiling_auc}</span></div>
         <p class="code faint" style="margin-top:8px">Natijalar PD dan tasodifiy
           chiqarilgan — hech qanday model ${h.ceiling_auc} dan oshib keta olmaydi;
-          ${h.auc} bu shiftning ${Math.round(h.auc / h.ceiling_auc * 100)}% i.</p>
+          ${h.auc} bu yuqori chegaraning ${Math.round(h.auc / h.ceiling_auc * 100)}% i.</p>
       </div>
       <div class="card flat">
         <div class="card-head"><h3>Qaror sifati</h3>
@@ -929,7 +928,7 @@ async function showApplication(id) {
         ${mi ? `<div class="verdict-box ${esc(mi.ohang)}" style="margin-top:12px">
             <p class="verdict-lead">${esc(mi.bosh_gap)}</p>
             ${(mi.tosqinlik_qildi || []).length ? `<div class="why" style="margin-top:14px">
-              <div><div class="label" style="margin-bottom:8px">To’sqinlik qildi</div>
+              <div><div class="label" style="margin-bottom:8px">To‘sqinlik qildi</div>
                 <ul class="bad">${mi.tosqinlik_qildi.map(x =>
                   `<li>${esc(x.matn)}<em>${x.ball.toFixed(0)}</em></li>`).join('')}</ul></div>
               <div><div class="label" style="margin-bottom:8px">Foydangizga ishladi</div>
@@ -1011,8 +1010,8 @@ function flowChart(flows) {
   const W = 720, H = 168, padT = 14, padB = 22, padL = 6, padR = 6;
   const n = flows.length;
   const slot = (W - padL - padR) / n;           // bir oyning kengligi
-  const gw = slot * 0.62;                       // guruh kengligi
-  const bw = gw / 3;                            // bitta ustun
+  const gw = slot * 0.72;                       // guruh kengligi
+  const gap = 1.5, bw = (gw - 2 * gap) / 3;     // uch ustun + oraliqlar
   const max = Math.max(1, ...flows.map(f =>
     Math.max(f.kirim, f.chiqim, f.naqd_yechish, f.oy_oxiri_qoldiq)));
   const y = v => padT + (1 - v / max) * (H - padT - padB);
@@ -1021,7 +1020,7 @@ function flowChart(flows) {
   // gorizontal to'r: 0 / 50% / 100%
   const grid = [0, .5, 1].map(t => {
     const yy = y(max * t);
-    return `<line class="fg" x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}"/>`
+    return `<line class="${t ? 'fg' : 'fg0'}" x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}"/>`
       + (t > 0 ? `<text class="fgl" x="${W - padR}" y="${yy - 3}">${
           max * t >= 1e6 ? (max * t / 1e6).toFixed(1) + ' mln' : Math.round(max * t / 1e3) + ' k'}</text>` : '');
   }).join('');
@@ -1034,17 +1033,17 @@ function flowChart(flows) {
          width="${bw.toFixed(1)}" height="${Math.max(0, H0 - y(v)).toFixed(1)}" rx="1.5">
          <title>${esc(f.oy)} · ${nom}: ${money(v)}</title></rect>`;
     bars += bar(f.kirim, 0, 'inc', 'kirim')
-          + bar(f.chiqim, bw, 'exp', 'chiqim')
-          + bar(f.naqd_yechish, bw * 2, 'cash', 'naqd yechish');
+          + bar(f.chiqim, bw + gap, 'exp', 'chiqim')
+          + bar(f.naqd_yechish, 2 * (bw + gap), 'cash', 'naqd yechish');
     pts.push(`${(x0 + gw / 2).toFixed(1)},${y(f.oy_oxiri_qoldiq).toFixed(1)}`);
-    if (i % 2 === 0 || n <= 6) {
-      labels += `<text class="fml" x="${(x0 + gw / 2).toFixed(1)}" y="${H - 6}">${
-        esc(String(f.oy).slice(2))}</text>`;
-    }
+    const full = i === 0 || /-01$/.test(String(f.oy));
+    labels += `<text class="fml" x="${(x0 + gw / 2).toFixed(1)}" y="${H - 6}">${
+      esc(full ? String(f.oy).slice(2) : String(f.oy).slice(-2))}</text>`;
   });
 
   return `<svg class="flowchart" viewBox="0 0 ${W} ${H}" role="img"
       aria-label="12 oylik pul oqimi">${grid}${bars}
+      <polyline class="bal-c" points="${pts.join(' ')}"/>
       <polyline class="bal" points="${pts.join(' ')}"/>
       ${pts.map(pt => { const [px, py] = pt.split(',');
         return `<circle class="bald" cx="${px}" cy="${py}" r="2.4"/>`; }).join('')}
@@ -1459,7 +1458,8 @@ async function renderGraph(applicantId) {
   const W = 760, H = 430;
   const nodes = g.nodes.map(n => ({ ...n, x: 0, y: 0, vx: 0, vy: 0 }));
   const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
-  const edges = g.edges.filter(e => byId[e.source] && byId[e.target]);
+  const edges = g.edges.filter(e => byId[e.source] && byId[e.target])
+    .sort((a, b) => (b.kind === 'mesh') - (a.kind === 'mesh'));   // mesh pastda
   const adj = {};                                 // hover yoritish uchun
   edges.forEach((e, i) => {
     (adj[e.source] = adj[e.source] || []).push(i);
@@ -1495,17 +1495,33 @@ async function renderGraph(applicantId) {
       <svg class="graf" viewBox="0 0 ${W} ${H}">
         ${edges.map((e, i) => {
           const cls = e.kind === 'mesh' ? 'ge-mesh' : e.kind === 'similar' ? 'ge-sim' : 'ge-attr';
+          // Masofa qanchalik kichik (o'xshashroq) — chiziq shunchalik qalin.
+          // Diapazon o'lchangan: eng yaqinlari ~0.3, chegara 1.15.
+          const w = e.kind === 'similar'
+              ? Math.max(1.2, 3.4 - (e.dist || 1) * 2).toFixed(1)
+              : e.kind === 'mesh' ? 1 : 1.5;
           const tip = e.kind === 'similar'
               ? `o\u2018xshashlik ${e.dist} · yaqin belgilar: ${e.label}`
               : e.kind === 'mesh' ? `o\u2018zaro o\u2018xshash · masofa ${e.dist}`
               : e.label || e.kind;
-          return `<line class="${cls}" data-i="${i}"><title>${esc(tip)}</title></line>`;
+          return `<line class="${cls}" data-i="${i}" stroke-width="${w}">
+            <title>${esc(tip)}</title></line>`;
         }).join('')}
-        ${nodes.map((n, i) => `
+        ${nodes.map((n, i) => {
+          const r = nodeR(n);
+          const sub = n.root ? '' :
+            n.natija === 'toladi' ? "to\u2018lagan"
+            : n.natija === 'defolt' ? 'defolt'
+            : n.type === 'bank' ? 'bank' : n.type === 'ariza' ? 'ariza' : '';
+          return `
           <g class="gn" data-i="${i}">
-            <circle r="${nodeR(n)}" fill="${nodeColor(n)}"></circle>
-            <text y="${nodeR(n) + 11}">${esc(String(n.label).slice(0, 18))}</text>
-          </g>`).join('')}
+            ${n.root ? `<circle r="${r + 4.5}" class="root-halo"></circle>` : ''}
+            <circle r="${r}" fill="${nodeColor(n)}"></circle>
+            <text y="${r + 11}">${esc(String(n.label).slice(0, 18))}</text>
+            ${sub ? `<text y="${r + 21}" class="gsub2 ${
+                n.natija === 'defolt' ? 'bad' : ''}">${sub}</text>` : ''}
+          </g>`;
+        }).join('')}
       </svg>
       <div class="graf-info" id="graf-info">
         <div class="label" style="margin-bottom:8px">Tugun tafsiloti</div>
@@ -1572,10 +1588,14 @@ async function renderGraph(applicantId) {
     el.addEventListener('pointerenter', () => {
       const on = new Set(adj[nodes[i].id] || []);
       lineEls.forEach((l, li) => l.classList.toggle('ge-hot', on.has(li)));
+      const nbr = new Set([nodes[i].id]);
+      on.forEach(li => { nbr.add(edges[li].source); nbr.add(edges[li].target); });
+      gEls.forEach((x, xi) => x.classList.toggle('gn-dim', !nbr.has(nodes[xi].id)));
       svg.classList.add('graf-focus');
     });
     el.addEventListener('pointerleave', () => {
       lineEls.forEach(l => l.classList.remove('ge-hot'));
+      gEls.forEach(x => x.classList.remove('gn-dim'));
       svg.classList.remove('graf-focus');
     });
   });

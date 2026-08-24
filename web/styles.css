@@ -516,9 +516,10 @@ html.dark{--flow-inc:#35d07a;--flow-exp:#ffb020;--flow-cash:#ff6b5f}
 /* ---------------------------------------------------------- aloqalar grafi */
 .graf{border-radius:var(--r-sm);width:100%;height:auto;display:block;background:var(--raised);
   border:1px solid var(--hair);touch-action:none}
-.graf line{stroke:var(--hair);stroke-width:1.5}
-.graf line.ge-sim{stroke:var(--rule);stroke-width:2}
-.graf line.ge-mesh{stroke:var(--rule);stroke-dasharray:4 4;opacity:.7}
+.graf line{stroke:var(--hair)}
+.graf line.ge-sim{stroke:var(--rule)}
+/* mesh — fon signali: mavjudligi muhim, har bir chiziq emas. Shovqin kamaysin. */
+.graf line.ge-mesh{stroke:var(--rule);stroke-dasharray:3 5;opacity:.38}
 .graf g.gn{cursor:grab}
 .graf g.gn:active{cursor:grabbing}
 .graf g.gn circle{stroke:var(--base);stroke-width:2}
@@ -565,3 +566,16 @@ html.dark{--flow-inc:#35d07a;--flow-exp:#ffb020;--flow-cash:#ff6b5f}
 .graf line.ge-hot{stroke:var(--accent-text);stroke-width:2.6;opacity:1}
 .graf-focus line:not(.ge-hot){opacity:.25}
 .graf g.gn-sel circle{stroke:var(--accent-text);stroke-width:3}
+
+.graf .root-halo{fill:none;stroke:var(--accent);stroke-width:2;opacity:.45}
+.graf text.gsub2{fill:var(--faint);font-size:8.5px}
+.graf text.gsub2.bad{fill:var(--risk-hi);font-weight:700}
+
+/* audit tuzatishlari: flow-halo, nol chiziq, bar hover, graf xiralashuv */
+.flowchart .bal-c{fill:none;stroke:var(--card);stroke-width:4;
+  stroke-linejoin:round;stroke-linecap:round;opacity:.9}
+.flowchart .bald{fill:var(--ink);stroke:var(--card);stroke-width:1.2}
+.flowchart .fg0{stroke:var(--rule);stroke-width:1;stroke-dasharray:none}
+.flowchart rect{transition:opacity .12s}
+.flowchart rect:hover{opacity:.75}
+.graf g.gn-dim{opacity:.3;transition:opacity .15s}

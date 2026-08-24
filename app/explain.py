@@ -59,23 +59,29 @@ Phrase = Callable[[dict], str]
 HUMAN: Dict[str, Dict[str, Phrase]] = {
     "free_cash": {
         "+": lambda f: f"barcha to'lovlardan keyin oyiga {som(f['free_cash'])} qoladi",
-        "-": lambda f: ("barcha to'lovlardan keyin qo'lingizda pul umuman qolmaydi"
+        "-": lambda f: ("so'ralgan summa bilan to'lovlardan keyin qo'lingizda "
+                        "pul qolmaydi"
                         if f["free_cash"] <= 0 else
-                        f"to'lovlardan keyin oyiga atigi {som(f['free_cash'])} qoladi"),
+                        f"so'ralgan summada to'lovlardan keyin oyiga atigi "
+                        f"{som(f['free_cash'])} qoladi"),
     },
     "dti": {
         "+": lambda f: f"umumiy qarz yuki daromadning {foiz(f['dti'])} i — xavfsiz daraja",
-        "-": lambda f: f"umumiy qarz yuki daromadning {foiz(f['dti'])} ini egallaydi",
+        "-": lambda f: (f"so'ralgan summada umumiy qarz yuki daromadning "
+                        f"{foiz(f['dti'])} ini egallaydi"),
     },
     "dti_current": {
-        "+": lambda f: (f"yangi kreditsiz ham qarz yukingiz past — daromadning "
+        "+": lambda f: ("boshqa banklarda faol qarzingiz yo'q — toza kredit profili"
+                        if f["dti_current"] <= 0.005 else
+                        f"mavjud qarz yukingiz past — daromadning atigi "
                         f"{foiz(f['dti_current'])} i"),
         "-": lambda f: (f"yangi kreditgacha ham mavjud to'lovlaringiz daromadning "
                         f"{foiz(f['dti_current'])} ini oladi"),
     },
     "pti": {
         "+": lambda f: f"yangi to'lov daromadning atigi {foiz(f['pti'])} ini oladi",
-        "-": lambda f: f"yangi to'lov daromadning {foiz(f['pti'])} ini oladi — bu og'ir",
+        "-": lambda f: (f"so'ralgan summaning oylik to'lovi daromadning "
+                        f"{foiz(f['pti'])} ini oladi — bu og'ir"),
     },
     "income_cv": {
         "+": lambda f: "daromadingiz oydan oyga barqaror",
@@ -83,14 +89,20 @@ HUMAN: Dict[str, Dict[str, Phrase]] = {
     },
     "income_median": {
         "+": lambda f: f"oylik daromadingiz {som(f['income_median'])} — yetarli daraja",
-        "-": lambda f: f"oylik daromadingiz {som(f['income_median'])} — so'ralgan summa uchun kam",
+        "-": lambda f: (f"oylik daromadingiz {som(f['income_median'])} — bu daraja "
+                        f"statistikada yuqoriroq xavf bilan boradi"),
     },
     "income_trend": {
         "+": lambda f: "oxirgi oylarda daromadingiz o'sgan",
         "-": lambda f: "oxirgi oylarda daromadingiz kamaygan",
     },
     "burn_ratio": {
-        "+": lambda f: f"xarajatlaringiz daromadning {foiz(f['burn_ratio'])} i — tejamkor",
+        "+": lambda f: ("hisobingizda ortiqcha xarajat kuzatilmaydi"
+                        if f["burn_ratio"] < 0.005 else
+                        f"xarajatlaringiz daromadning {foiz(f['burn_ratio'])} i — tejamkor"
+                        if f["burn_ratio"] < 0.5 else
+                        f"xarajatlaringiz daromadning {foiz(f['burn_ratio'])} i — "
+                        f"me'yor doirasida"),
         "-": lambda f: f"xarajatlaringiz daromadning {foiz(f['burn_ratio'])} ini yeb qo'yadi",
     },
     "cash_ratio": {
@@ -113,16 +125,24 @@ HUMAN: Dict[str, Dict[str, Phrase]] = {
     "balance_to_income": {
         "+": lambda f: "mavjud qarz qoldig'i yillik daromadingizga nisbatan kichik",
         "-": lambda f: (f"mavjud qarz qoldig'i yillik daromadingizdan "
-                        f"{f['balance_to_income']:.1f} barobar"),
+                        f"{f['balance_to_income']:.1f} barobar ko'p"
+                        if f["balance_to_income"] >= 1 else
+                        f"mavjud qarz qoldig'i yillik daromadingizning "
+                        f"{foiz(f['balance_to_income'])} iga teng — bu sezilarli yuk"),
     },
     "loan_to_income": {
         "+": lambda f: "so'ralgan summa daromadingizga mos",
         "-": lambda f: (f"so'ralgan summa yillik daromadingizdan "
-                        f"{f['loan_to_income']:.1f} barobar katta"),
+                        f"{f['loan_to_income']:.1f} barobar katta"
+                        if f["loan_to_income"] >= 1 else
+                        f"so'ralgan summa yillik daromadingizning "
+                        f"{foiz(f['loan_to_income'])} iga teng — sezilarli so'rov"),
     },
     "ish_staji_oy": {
         "+": lambda f: f"ish stajingiz uzoq — {oy(f['ish_staji_oy'])}",
-        "-": lambda f: f"ish stajingiz qisqa — atigi {oy(f['ish_staji_oy'])}",
+        "-": lambda f: ("hozircha tasdiqlangan ish stajingiz yo'q"
+                        if f["ish_staji_oy"] <= 0 else
+                        f"ish stajingiz qisqa — atigi {oy(f['ish_staji_oy'])}"),
     },
     "yosh": {
         "+": lambda f: f"{int(f['yosh'])} yosh — statistik jihatdan barqaror guruh",
@@ -130,8 +150,13 @@ HUMAN: Dict[str, Dict[str, Phrase]] = {
     },
     "mijoz_boldi_oy": {
         "+": lambda f: f"bankimiz bilan tarixingiz uzoq — {oy(f['mijoz_boldi_oy'])}",
-        "-": lambda f: (f"bankimiz bilan tarixingiz qisqa — {oy(f['mijoz_boldi_oy'])}, "
-                        f"sizni hali yaxshi bilmaymiz"),
+        "-": lambda f: ("siz bankimizga yangi mijozsiz — tariximiz hali shakllanmagan"
+                        if f["mijoz_boldi_oy"] <= 0 else
+                        f"bankimiz bilan tarixingiz qisqa — {oy(f['mijoz_boldi_oy'])}, "
+                        f"sizni hali yaxshi bilmaymiz"
+                        if f["mijoz_boldi_oy"] < 12 else
+                        f"bankimiz bilan tarixingiz nisbatan qisqa — "
+                        f"{oy(f['mijoz_boldi_oy'])}"),
     },
     "income_per_capita": {
         "+": lambda f: (f"oila a'zosiga oyiga {som(f['income_per_capita'])} to'g'ri keladi — "
@@ -249,15 +274,19 @@ def next_steps(decision) -> List[str]:
         steps.append(f"So'rovni {som(gated)} gacha kamaytiring — bu summada "
                      f"ma'qullanish ehtimoli sezilarli oshadi.")
     elif afford > 0 and afford < requested:
-        steps.append(f"To'lov qobiliyatingiz {som(afford)} ga yetadi. Shu summani so'rasangiz, "
-                     f"ariza qo'lda ko'rib chiqishga tushadi.")
+        if decision.qaror == "QOLDA_KORIB_CHIQISH":
+            steps.append(f"To'lov qobiliyatingiz {som(afford)} ga yetadi — shu "
+                         f"summani so'rasangiz, xodim qarori osonlashadi.")
+        else:
+            steps.append(f"To'lov qobiliyatingiz {som(afford)} ga yetadi. Shu summani "
+                         f"so'rasangiz, ariza qo'lda ko'rib chiqishga tushadi.")
 
     # 2) Muddat — eng oson tuzatiladigan parametr.
     term = f.get("term_months", 12)
     if (afford > 0 and term < 60
             and (f.get("pti", 0) > MAX_PTI or f.get("dti", 0) > MAX_DTI)):
-        steps.append(f"Muddatni uzaytiring (hozir {oy(term)}) — oylik to'lov kamayadi "
-                     f"va qarz yuki chegara ichiga tushadi.")
+        steps.append(f"Muddatni uzaytirib ko'ring (hozir {oy(term)}) — oylik to'lov "
+                     f"kamayadi va qarz yuki chegaraga yaqinlashadi.")
 
     # 3) Mavjud yuk. `active_count` sharti olib tashlandi: yuk kredit
     # registridan emas, ariza maydonidan ham kelishi mumkin (boshqa bank).
@@ -301,6 +330,11 @@ def next_steps(decision) -> List[str]:
                 steps.append("Ball chegaradan past. Bank bilan tarixingizni "
                              "mustahkamlang va bir necha oydan so'ng qayta urinib ko'ring.")
         elif decision.qaror == "QOLDA_KORIB_CHIQISH":
+            kam = APPROVE_SCORE - decision.score.score
+            if 0 < kam <= 60:
+                steps.append(f"Avtomatik ma'qullashga {kam:.0f} ball yetmadi "
+                             f"(chegara {APPROVE_SCORE:.0f}). Tushumlarni muntazam "
+                             f"bank hisobiga o'tkazish ballni oshiradi.")
             steps.append("Hujjatlaringizni tayyorlab turing — underwriter arizangizni "
                          "1 ish kunida ko'rib chiqadi.")
         else:
@@ -315,7 +349,7 @@ def next_steps(decision) -> List[str]:
 
 HEADLINE = {
     "MAQULLANDI": "Tabriklaymiz — kredit ma'qullandi",
-    "QOLDA_KORIB_CHIQISH": "Arizangiz bank xodimiga ko'rib chiqishga yuborildi",
+    "QOLDA_KORIB_CHIQISH": "Arizangiz bank xodimi ko'rib chiqishi uchun yuborildi",
     "RAD_ETILDI": "Afsuski, hozircha kredit bera olmaymiz",
 }
 
@@ -355,7 +389,8 @@ def _lead(decision) -> str:
                 "KO_BANDLIK": "hozirda doimiy ish joyingiz va muntazam daromadingiz yo'q",
                 "KO_KECHIKISH": (f"kredit tarixingizda {int(f.get('max_delinq', 0))} kunlik "
                                  f"kechikish bor"),
-                "KO_YOSH": f"{int(f.get('yosh', 0))} yosh bizning kreditlash yoshimizdan tashqarida",
+                "KO_YOSH": (f"{int(f.get('yosh', 0))} yosh bankimiz kreditlaydigan "
+                            f"yosh oralig'idan tashqarida"),
                 "KO_DAROMAD": "daromadingizni tasdiqlab bo'lmadi",
             }.get(ko[0].kod, "asosiy shartlardan biri bajarilmadi")
             return f"Sabab: {reason}."
