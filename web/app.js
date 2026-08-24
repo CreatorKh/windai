@@ -1835,9 +1835,64 @@ function keepAlive() {
   }, 4 * 60 * 1000);
 }
 
+/* Demo/skrinshot ssenariylari: ?kirish=<login> avtomatik kiradi,
+   &amal=... tayyor holatni ochadi. Parollar demo hisoblarniki (ular
+   login ekranida baribir ochiq) — repetitsiya va taqdimot skrinshotlari
+   uchun chuqur havolalar. */
+async function demoScript() {
+  const q = new URLSearchParams(location.search);
+  const login = q.get('kirish');
+  if (!login) return false;
+  const accounts = await (await fetch('/api/auth/demo')).json();
+  const acc = accounts.find(a => a.login === login);
+  if (!acc) return false;
+  await doLogin(acc.login, acc.parol);
+  const amal = q.get('amal');
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  if (amal === 'ariza_natija') {
+    setTab('ariza', { silent: true });
+    applyPreset(q.get('preset') || 'ideal');
+    await s(300);
+    $('#form-ariza').requestSubmit();
+  } else if (amal === 'mavjud_natija') {
+    setTab('ariza', { silent: true });
+    setMode('mavjud');
+    const id = q.get('mijoz') || 'A000001';
+    $('#f-applicant').value = id;
+    await loadMavjudKarta(id);
+    if (q.get('summa')) $('#f-summa').value = nf.format(+q.get('summa'));
+    if (q.get('muddat')) $('#f-muddat').value = q.get('muddat');
+    await s(300);
+    $('#form-ariza').requestSubmit();
+  } else if (amal === 'graf_ochish') {
+    location.hash = '#mijoz/' + (q.get('mijoz') || 'A000010');
+    await s(2600);
+    const g = [...document.querySelectorAll('.graf g.gn')]
+      .find(x => /lagan|defolt/.test(x.querySelector('.gsub2')?.textContent || ''));
+    if (g) {
+      g.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      dispatchEvent(new PointerEvent('pointerup'));
+      await s(300);
+      $('#gi-expand')?.click();
+      await s(2600);
+    }
+    // skrinshot uchun graf kartasi sahifa boshiga chiqadi
+    const card = $('#graf-wrap')?.closest('.card');
+    if (card) { card.parentElement.prepend(card); scrollTo(0, 0); }
+  } else if (amal === 'whatif') {
+    location.hash = '#whatif';
+    await s(2200);
+    const wi = $('#wi-inc');
+    wi.value = q.get('daromad') || 165;
+    wi.dispatchEvent(new Event('input'));
+  }
+  return true;
+}
+
 (async function boot() {
   initTheme(); initTabs(); await initGate();
   try {
+    if (await demoScript()) return;
     const r = await fetch('/api/auth/me');
     if (!r.ok) { showGate(''); return; }
     state.user = await r.json();
