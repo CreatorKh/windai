@@ -380,12 +380,12 @@ def mijoz_kartasi(applicant_id: str,
 
 
 @app.get("/api/mijoz/{applicant_id}/graf")
-def mijoz_grafi(applicant_id: str,
+def mijoz_grafi(applicant_id: str, n: int = Query(8, ge=3, le=24),
                 user: dict = Depends(require("mijoz:korish"))) -> dict:
     """Mijoz aloqalari grafi: kreditlar, o'xshash mijozlar va ular orasidagi
     setka. Bo'sh qatlam bilan qaytgan `partial`/`missing` maydonlariga qarang —
     "aloqa yo'q" va "qatlam ishlamadi" bir narsa emas."""
-    g = engine.graph.build(applicant_id)
+    g = engine.graph.build(applicant_id, n=n)
     if g is None:
         raise HTTPException(404, f"{applicant_id} topilmadi")
     return g

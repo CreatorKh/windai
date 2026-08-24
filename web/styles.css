@@ -579,3 +579,10 @@ html.dark{--flow-inc:#35d07a;--flow-exp:#ffb020;--flow-cash:#ff6b5f}
 .flowchart rect{transition:opacity .12s}
 .flowchart rect:hover{opacity:.75}
 .graf g.gn-dim{opacity:.3;transition:opacity .15s}
+
+/* graf boshqaruvlari + ochilgan tugun belgisi */
+.graf-ctl{display:inline-flex;align-items:center;gap:6px;font-size:12px;
+  color:var(--dim);font-weight:600}
+.graf-ctl select{height:26px;width:auto;padding:0 22px 0 8px}
+.graf g.gn-open circle{stroke:var(--accent-text);stroke-width:2.5;
+  stroke-dasharray:3 2}

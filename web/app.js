@@ -1170,6 +1170,7 @@ async function renderClientCard(id) {
           ustida — qaysi belgilar bo‘yicha o‘xshash. Punktir — qo‘shnilar
           bir-biriga ham o‘xshash (zich klaster). Bu ballning vizual isboti:
           atrof qizarsa — bunday profillar haqiqatan defolt qiladi.</p>
+        <div id="graf-controls" class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:10px"></div>
         <div id="graf-chips" class="row" style="margin-bottom:10px;flex-wrap:wrap"></div>
         <div id="graf-wrap"><div class="loading">graf qurilmoqda…</div></div>
         <div class="legend-dots" style="margin-top:10px">
@@ -1466,59 +1467,124 @@ async function loadVersions() {
 }
 
 /* ========================================================== ALOQALAR GRAFI */
-/* Jonli force-directed simulyatsiya — kutubxonasiz, FindDroppers ruhida:
-   graf ochilganda tugunlar harakatda joylashadi (requestAnimationFrame),
-   sudralganda fizika qayta qiziydi, tugun bosilganda yon panelda tafsilot,
-   hover da bog'liq qirralar yoritiladi. Sarlavhada qatlam statistikasi:
-   nima kesildi (cuts), nima ishlamadi (partial) — yashirmaymiz. */
+/* FindDroppers yondashuvi: chuqurlik 1 standart, VGLUB — faqat tanlangan
+   tugundan, tahlilchi o'zi ochadi. Har ochilish alohida so'rov, natija joriy
+   kanvasga QO'SHILADI (yangi rasm emas). O'xshashlik qirra UZUNLIGIDA ham
+   kodlanadi: yaqinroq mijoz — kaltaroq chiziq. */
 let grafCleanup = null;
+
 async function renderGraph(applicantId) {
   const wrap = $('#graf-wrap');
-  if (grafCleanup) { grafCleanup(); grafCleanup = null; }   // oldingi graf tozalansin
-  let g;
+  if (grafCleanup) { grafCleanup(); grafCleanup = null; }
+
+  const G = {
+    nodes: [], edges: [], byId: {}, expanded: new Set(),
+    n: Number(localStorage.getItem('grafN') || 8),
+    meshOn: true, drag: null, heat: 1, rafId: null,
+    W: 760, H: 460,
+  };
+
+  const edgeKey = e => [e.kind, ...[e.source, e.target].sort()].join('|');
+  const seenEdges = new Set();
+
+  function merge(g, centerId) {
+    const c = G.byId[centerId];
+    let added = 0;
+    for (const n of g.nodes) {
+      if (G.byId[n.id]) continue;
+      const ang = Math.random() * 6.283;
+      G.byId[n.id] = { ...n, ring: c ? (c.ring || 0) + 1 : 0,
+        x: (c ? c.x : G.W / 2) + 46 * Math.cos(ang),
+        y: (c ? c.y : G.H / 2) + 46 * Math.sin(ang), vx: 0, vy: 0 };
+      G.nodes.push(G.byId[n.id]);
+      added++;
+    }
+    for (const e of g.edges) {
+      if (!G.byId[e.source] || !G.byId[e.target]) continue;
+      const k = edgeKey(e);
+      if (seenEdges.has(k)) continue;
+      seenEdges.add(k);
+      G.edges.push(e);
+    }
+    return added;
+  }
+
+  async function fetchLayer(id, isRoot) {
+    const g = await api(`/api/mijoz/${encodeURIComponent(id)}/graf?n=${G.n}`);
+    if (isRoot) {
+      $('#graf-basis').textContent = 'Asos: ' + g.basis +
+        '. Bu datasetda yo\u2018q: ' + g.missing.join(', ') + '.';
+    }
+    merge(g, 'c' + id);
+    G.expanded.add('c' + id);
+    updateChips(g, isRoot);
+    return g;
+  }
+
+  function updateChips(lastG, isRoot) {
+    $('#graf-status').textContent =
+      `${G.nodes.length} tugun · ${G.edges.length} aloqa` +
+      (lastG ? ` · ${lastG.took.total} ms` : '');
+    const clients = G.nodes.filter(n => n.type === 'client' && !n.root);
+    const bad = clients.filter(n => n.natija === 'defolt').length;
+    const chips = [
+      `<span class="chip">${G.nodes.length} tugun · ${G.edges.length} aloqa</span>`,
+      `<span class="chip">o\u2018xshashlar: ${clients.length} · defolt ${bad}
+        (${clients.length ? Math.round(bad / clients.length * 100) : 0}%)</span>`,
+      `<span class="chip">${G.expanded.size} tugun ochilgan</span>`,
+    ];
+    if (lastG) {
+      for (const [k, c] of Object.entries(lastG.cuts || {})) {
+        chips.push(`<span class="chip">${esc(k)}: ${c.kept}/${c.total}</span>`);
+      }
+      for (const f of lastG.partial || []) {
+        chips.push(`<span class="chip" style="color:var(--risk-hi)">${esc(f)} ishlamadi</span>`);
+      }
+      chips.push(`<span class="chip">${lastG.took.total} ms</span>`);
+    }
+    $('#graf-chips').innerHTML = chips.join('');
+  }
+
+  /* ── boshqaruvlar (FindDroppers dagi days/depth panelining analogi) ── */
+  $('#graf-controls').innerHTML = `
+    <label class="graf-ctl">qo\u2018shnilar
+      <select id="gc-n">${[8, 16, 24].map(v =>
+        `<option value="${v}"${v === G.n ? ' selected' : ''}>${v}</option>`).join('')}
+      </select></label>
+    <label class="graf-ctl"><input type="checkbox" id="gc-mesh" checked>
+      o\u2018zaro aloqalar</label>
+    <button class="btn ghost mini" id="gc-relayout">Qayta joylash</button>
+    <span class="code faint">tugunni bosing → tafsilot; «atrofini ochish» → 2-daraja</span>`;
+  $('#gc-n').onchange = () => {
+    localStorage.setItem('grafN', $('#gc-n').value);
+    renderGraph(applicantId);                    // yangi kenglik bilan qaytadan
+  };
+  $('#gc-mesh').onchange = () => {
+    G.meshOn = $('#gc-mesh').checked;
+    render();
+  };
+  $('#gc-relayout').onclick = () => { G.heat = 1; loop(); };
+
+  wrap.innerHTML = '<div class="loading">graf qurilmoqda…</div>';
   try {
-    g = await api('/api/mijoz/' + encodeURIComponent(applicantId) + '/graf');
+    await fetchLayer(applicantId, true);
   } catch (e) {
     wrap.innerHTML = `<div class="err">Graf yuklanmadi: ${esc(e.message)}</div>`;
     return;
   }
+  const rootNode = G.nodes.find(n => n.root);
+  if (rootNode) { rootNode.x = G.W / 2; rootNode.y = G.H / 2; }
 
-  // ── sarlavha statistikasi: FindDroppers dagi took/cuts/partial ──
-  $('#graf-status').textContent =
-    `${g.nodes.length} tugun · ${g.edges.length} aloqa · ${g.took.total} ms`;
-  const chips = [];
-  chips.push(`<span class="chip">o‘xshash: ${g.similar}</span>`);
-  chips.push(`<span class="chip">setka: ${g.mesh_edges} qirra</span>`);
-  for (const [k, c] of Object.entries(g.cuts || {})) {
-    chips.push(`<span class="chip">${esc(k)}: ${c.kept}/${c.total} ko‘rsatildi</span>`);
-  }
-  for (const f of g.partial || []) {
-    chips.push(`<span class="chip" style="color:var(--risk-hi)">${esc(f)} ishlamadi</span>`);
-  }
-  $('#graf-chips').innerHTML = chips.join('');
-  $('#graf-basis').textContent = 'Asos: ' + g.basis +
-    '. Bu datasetda yo\u2018q: ' + g.missing.join(', ') + '.';
-
-  const W = 760, H = 430;
-  const nodes = g.nodes.map(n => ({ ...n, x: 0, y: 0, vx: 0, vy: 0 }));
-  const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
-  const edges = g.edges.filter(e => byId[e.source] && byId[e.target])
-    .sort((a, b) => (b.kind === 'mesh') - (a.kind === 'mesh'));   // mesh pastda
-  const adj = {};                                 // hover yoritish uchun
-  edges.forEach((e, i) => {
-    (adj[e.source] = adj[e.source] || []).push(i);
-    (adj[e.target] = adj[e.target] || []).push(i);
-  });
-
-  const root = nodes.find(n => n.root) || nodes[0];
-  let ang = 0;
-  nodes.forEach(n => {
-    if (n === root) { n.x = W / 2; n.y = H / 2; return; }
-    const r = 40 + Math.random() * 30;            // markazdan boshlab tarqaladi
-    ang += 2.399963;
-    n.x = W / 2 + r * Math.cos(ang);
-    n.y = H / 2 + r * Math.sin(ang);
-  });
+  /* ── SVG skelet bir marta, elementlar render() da qayta quriladi ── */
+  wrap.innerHTML = `<div class="graf-split">
+      <svg class="graf" viewBox="0 0 ${G.W} ${G.H}"></svg>
+      <div class="graf-info" id="graf-info">
+        <div class="label" style="margin-bottom:8px">Tugun tafsiloti</div>
+        <p class="data dim">Tugunni bosing — tafsilot shu yerda. Mijoz tugunidan
+        «atrofini ochish» bilan ikkinchi daraja qo\u2018shiladi.</p>
+      </div></div>`;
+  const svg = wrap.querySelector('svg');
+  let lineEls = [], gEls = [], adj = {};
 
   const nodeColor = n => {
     if (n.root) return 'var(--accent)';
@@ -1532,185 +1598,203 @@ async function renderGraph(applicantId) {
     }
     return 'var(--rule)';
   };
-  const nodeR = n => n.root ? 17 : n.type === 'client' ? 12 : 9;
+  const nodeR = n => n.root ? 17 : n.type === 'client' ? (n.ring > 1 ? 9 : 12) : 8;
+  const visEdges = () => G.meshOn ? G.edges
+    : G.edges.filter(e => e.kind !== 'mesh');
 
-  wrap.innerHTML = `
-    <div class="graf-split">
-      <svg class="graf" viewBox="0 0 ${W} ${H}">
-        ${edges.map((e, i) => {
-          const cls = e.kind === 'mesh' ? 'ge-mesh' : e.kind === 'similar' ? 'ge-sim' : 'ge-attr';
-          // Masofa qanchalik kichik (o'xshashroq) — chiziq shunchalik qalin.
-          // Diapazon o'lchangan: eng yaqinlari ~0.3, chegara 1.15.
-          const w = e.kind === 'similar'
-              ? Math.max(1.2, 3.4 - (e.dist || 1) * 2).toFixed(1)
-              : e.kind === 'mesh' ? 1 : 1.5;
-          const tip = e.kind === 'similar'
-              ? `o\u2018xshashlik ${e.dist} · yaqin belgilar: ${e.label}`
-              : e.kind === 'mesh' ? `o\u2018zaro o\u2018xshash · masofa ${e.dist}`
-              : e.label || e.kind;
-          return `<line class="${cls}" data-i="${i}" stroke-width="${w}">
-            <title>${esc(tip)}</title></line>`;
-        }).join('')}
-        ${nodes.map((n, i) => {
-          const r = nodeR(n);
-          const sub = n.root ? '' :
-            n.natija === 'toladi' ? "to\u2018lagan"
-            : n.natija === 'defolt' ? 'defolt'
-            : n.type === 'bank' ? 'bank' : n.type === 'ariza' ? 'ariza' : '';
-          return `
-          <g class="gn" data-i="${i}">
-            ${n.root ? `<circle r="${r + 4.5}" class="root-halo"></circle>` : ''}
-            <circle r="${r}" fill="${nodeColor(n)}"></circle>
-            <text y="${r + 11}">${esc(String(n.label).slice(0, 18))}</text>
-            ${sub ? `<text y="${r + 21}" class="gsub2 ${
-                n.natija === 'defolt' ? 'bad' : ''}">${sub}</text>` : ''}
-          </g>`;
-        }).join('')}
-      </svg>
-      <div class="graf-info" id="graf-info">
-        <div class="label" style="margin-bottom:8px">Tugun tafsiloti</div>
-        <p class="data dim">Tugunni bosing — tafsilot shu yerda. Sudrash mumkin,
-          o‘xshash mijozga ikki bosishda o‘tiladi.</p>
-      </div>
-    </div>`;
+  function render() {
+    const edges = visEdges();
+    adj = {};
+    edges.forEach((e, i) => {
+      (adj[e.source] = adj[e.source] || []).push(i);
+      (adj[e.target] = adj[e.target] || []).push(i);
+    });
+    svg.innerHTML = edges.map((e, i) => {
+      const cls = e.kind === 'mesh' ? 'ge-mesh' : e.kind === 'similar' ? 'ge-sim' : 'ge-attr';
+      const w = e.kind === 'similar'
+          ? Math.max(1.2, 3.4 - (e.dist || 1) * 2).toFixed(1)
+          : e.kind === 'mesh' ? 1 : 1.5;
+      const tip = e.kind === 'similar'
+          ? `o\u2018xshashlik ${e.dist} · yaqin belgilar: ${e.label}`
+          : e.kind === 'mesh' ? `o\u2018zaro o\u2018xshash · masofa ${e.dist}`
+          : e.label || e.kind;
+      return `<line class="${cls}" data-i="${i}" stroke-width="${w}">
+        <title>${esc(tip)}</title></line>`;
+    }).join('') + G.nodes.map((n, i) => {
+      const r = nodeR(n);
+      const sub = n.root ? '' :
+        n.natija === 'toladi' ? "to\u2018lagan"
+        : n.natija === 'defolt' ? 'defolt'
+        : n.type === 'bank' ? 'bank' : n.type === 'ariza' ? 'ariza' : '';
+      return `<g class="gn${G.expanded.has(n.id) && !n.root ? ' gn-open' : ''}"
+          data-i="${i}">
+        ${n.root ? `<circle r="${r + 4.5}" class="root-halo"></circle>` : ''}
+        <circle r="${r}" fill="${nodeColor(n)}"></circle>
+        <text y="${r + 11}">${esc(String(n.label).slice(0, 18))}</text>
+        ${sub ? `<text y="${r + 21}" class="gsub2 ${
+            n.natija === 'defolt' ? 'bad' : ''}">${sub}</text>` : ''}
+        <title>${esc(n.label)}</title></g>`;
+    }).join('');
+    lineEls = [...svg.querySelectorAll('line')];
+    gEls = [...svg.querySelectorAll('g.gn')];
+    bind(edges);
+    paint(edges);
+  }
 
-  const svg = wrap.querySelector('svg');
-  const lineEls = [...svg.querySelectorAll('line')];
-  const gEls = [...svg.querySelectorAll('g.gn')];
-
-  function paint() {
+  function paint(edges) {
+    edges = edges || visEdges();
     lineEls.forEach((el, i) => {
-      const e = edges[i], a = byId[e.source], b = byId[e.target];
+      const e = edges[i], a = G.byId[e.source], b = G.byId[e.target];
       el.setAttribute('x1', a.x); el.setAttribute('y1', a.y);
       el.setAttribute('x2', b.x); el.setAttribute('y2', b.y);
     });
     gEls.forEach((el, i) =>
-      el.setAttribute('transform', `translate(${nodes[i].x},${nodes[i].y})`));
+      el.setAttribute('transform', `translate(${G.nodes[i].x},${G.nodes[i].y})`));
   }
 
-  // ── jonli simulyatsiya: sovuguncha aylanaveradi, sudrash qayta qizdiradi ──
-  let heat = 1.0, rafId = null;
+  /* ── fizika: o'xshashlik masofasi qirra uzunligiga aylanadi ── */
   function tick() {
-    const k = 0.02;
+    const k = 0.02, edges = visEdges();
     for (const e of edges) {
-      const a = byId[e.source], b = byId[e.target];
-      const want = e.kind === 'loan' || e.kind === 'ariza' ? 90
-                 : e.kind === 'mesh' ? 115 : 155;
+      const a = G.byId[e.source], b = G.byId[e.target];
+      // dist 0.3 (juda o'xshash) -> ~110px, dist 1.15 (chegara) -> ~180px
+      const want = e.kind === 'loan' || e.kind === 'ariza' ? 85
+                 : e.kind === 'mesh' ? 120
+                 : 85 + Math.min(e.dist || 1, 1.4) * 80;
       const dx = b.x - a.x, dy = b.y - a.y;
       const d = Math.max(1, Math.hypot(dx, dy));
       const f = k * (d - want) / d;
       a.vx += f * dx; a.vy += f * dy;
       b.vx -= f * dx; b.vy -= f * dy;
     }
-    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
-      const a = nodes[i], b = nodes[j];
+    for (let i = 0; i < G.nodes.length; i++) for (let j = i + 1; j < G.nodes.length; j++) {
+      const a = G.nodes[i], b = G.nodes[j];
       const dx = b.x - a.x, dy = b.y - a.y;
       const d2 = Math.max(120, dx * dx + dy * dy);
       const f = 1700 / d2, d = Math.sqrt(d2);
       a.vx -= f * dx / d; a.vy -= f * dy / d;
       b.vx += f * dx / d; b.vy += f * dy / d;
     }
-    for (const n of nodes) {
+    for (const n of G.nodes) {
       if (n.root || n._pin) { n.vx = n.vy = 0; continue; }
-      n.x = Math.max(28, Math.min(W - 28, n.x + n.vx * heat));
-      n.y = Math.max(22, Math.min(H - 26, n.y + n.vy * heat));
+      n.x = Math.max(26, Math.min(G.W - 26, n.x + n.vx * G.heat));
+      n.y = Math.max(20, Math.min(G.H - 24, n.y + n.vy * G.heat));
       n.vx *= 0.82; n.vy *= 0.82;
     }
     paint();
-    heat *= 0.985;
-    if (heat > 0.02) rafId = requestAnimationFrame(tick);
+    G.heat *= 0.985;
+    if (G.heat > 0.02) G.rafId = requestAnimationFrame(tick);
   }
-  const reheat = () => {
-    heat = Math.max(heat, 0.5);
-    cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(tick);
-  };
-  rafId = requestAnimationFrame(tick);
-  const onUp = () => {
-    if (drag !== null) nodes[drag]._pin = nodes[drag].root ? true : false;
-    drag = null;
-  };
-  addEventListener('pointerup', onUp);
-  addEventListener('pointercancel', onUp);
-  grafCleanup = () => {
-    cancelAnimationFrame(rafId);
-    removeEventListener('pointerup', onUp);
-    removeEventListener('pointercancel', onUp);
-  };
+  function loop() {
+    cancelAnimationFrame(G.rafId);
+    G.heat = Math.max(G.heat, 0.6);
+    G.rafId = requestAnimationFrame(tick);
+  }
 
-  // ── hover: bog'liq qirralarni yoritish ──
-  gEls.forEach((el, i) => {
-    el.addEventListener('pointerenter', () => {
-      if (drag !== null) return;
-      const on = new Set(adj[nodes[i].id] || []);
-      lineEls.forEach((l, li) => l.classList.toggle('ge-hot', on.has(li)));
-      const nbr = new Set([nodes[i].id]);
-      on.forEach(li => { nbr.add(edges[li].source); nbr.add(edges[li].target); });
-      gEls.forEach((x, xi) => x.classList.toggle('gn-dim', !nbr.has(nodes[xi].id)));
-      svg.classList.add('graf-focus');
-    });
-    el.addEventListener('pointerleave', () => {
-      lineEls.forEach(l => l.classList.remove('ge-hot'));
-      gEls.forEach(x => x.classList.remove('gn-dim'));
-      svg.classList.remove('graf-focus');
-    });
-  });
+  /* ── tugun tafsiloti + VGLUB OCHISH ── */
+  async function expandNode(n, btn) {
+    if (G.expanded.has(n.id)) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'ochilmoqda…'; }
+    try {
+      await fetchLayer(n.sub, false);
+      render();
+      loop();
+    } catch (e) {
+      toast('Ochib bo\u2018lmadi: ' + e.message);
+    }
+  }
 
-  // ── tugun tafsiloti paneli ──
   function showNode(n) {
     const rows = [];
     if (n.type === 'client') {
-      rows.push(['Turi', n.root ? 'markaziy mijoz' : 'o\u2018xshash mijoz']);
+      rows.push(['Turi', n.root ? 'markaziy mijoz'
+        : (n.ring > 1 ? `${n.ring}-daraja o\u2018xshash` : 'o\u2018xshash mijoz')]);
       if (n.sub) rows.push(['ID', n.sub]);
       if (n.ball) rows.push(['Ball', n.ball]);
       if (n.natija) rows.push(['Natija', n.natija === 'toladi' ? 'to\u2018lagan'
         : n.natija === 'defolt' ? 'defolt qilgan' : n.natija]);
       if (n.bandlik) rows.push(['Bandlik', n.bandlik]);
       if (n.viloyat) rows.push(['Viloyat', n.viloyat]);
-    } else if (n.type === 'bank') {
-      rows.push(['Turi', 'bank (mavjud kredit)']);
-    } else if (n.type === 'ariza') {
+    } else if (n.type === 'bank') rows.push(['Turi', 'bank (mavjud kredit)']);
+    else if (n.type === 'ariza') {
       rows.push(['Turi', 'ariza']);
       if (n.sub) rows.push(['Maqsad', n.sub]);
       if (n.qaror) rows.push(['Qaror', n.qaror]);
-      if (n.ball) rows.push(['Ball', n.ball]);
     }
+    const canExpand = n.type === 'client' && !n.root && n.sub
+      && !G.expanded.has(n.id);
     $('#graf-info').innerHTML = `
       <div class="label" style="margin-bottom:8px">Tugun tafsiloti</div>
       <b style="display:block;margin-bottom:8px">${esc(n.label)}</b>
       ${rows.map(([k, v]) => `<div class="between" style="padding:3px 0">
         <span class="dim">${k}</span><span>${esc(String(v))}</span></div>`).join('')}
-      ${n.type === 'client' && !n.root && n.sub
-        ? `<button class="btn mini" style="margin-top:10px"
-             onclick="location.hash='#mijoz/${esc(n.sub)}'">Kartasiga o\u2018tish</button>`
-        : ''}`;
+      <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:6px">
+        ${canExpand ? `<button class="btn mini" id="gi-expand">Atrofini ochish</button>` : ''}
+        ${G.expanded.has(n.id) && !n.root
+          ? '<span class="chip">atrofi ochilgan</span>' : ''}
+        ${n.type === 'client' && !n.root && n.sub
+          ? `<button class="btn ghost mini" id="gi-goto">Kartasi</button>` : ''}
+      </div>`;
+    const ex = $('#gi-expand');
+    if (ex) ex.onclick = () => expandNode(n, ex);
+    const go = $('#gi-goto');
+    if (go) go.onclick = () => { location.hash = '#mijoz/' + n.sub; };
   }
 
-  // ── sudrash + tanlash ──
-  let drag = null;
+  /* ── hodisalar (delegatsiya — render() dan keyin qayta ulanadi) ── */
+  function bind(edges) {
+    gEls.forEach((el, i) => {
+      const n = G.nodes[i];
+      el.addEventListener('pointerdown', ev => {
+        G.drag = i; n._pin = true; ev.preventDefault();
+        gEls.forEach(x => x.classList.remove('gn-sel'));
+        el.classList.add('gn-sel');
+        showNode(n);
+      });
+      el.addEventListener('dblclick', () => {
+        if (n.type === 'client' && !n.root && n.sub) expandNode(n, null);
+      });
+      el.addEventListener('pointerenter', () => {
+        if (G.drag !== null) return;
+        const on = new Set(adj[n.id] || []);
+        lineEls.forEach((l, li) => l.classList.toggle('ge-hot', on.has(li)));
+        const nbr = new Set([n.id]);
+        on.forEach(li => { nbr.add(edges[li].source); nbr.add(edges[li].target); });
+        gEls.forEach((x, xi) => x.classList.toggle('gn-dim', !nbr.has(G.nodes[xi].id)));
+        svg.classList.add('graf-focus');
+      });
+      el.addEventListener('pointerleave', () => {
+        lineEls.forEach(l => l.classList.remove('ge-hot'));
+        gEls.forEach(x => x.classList.remove('gn-dim'));
+        svg.classList.remove('graf-focus');
+      });
+    });
+  }
   const pos = ev => {
     const r = svg.getBoundingClientRect();
     const p = ev.touches ? ev.touches[0] : ev;
-    return [(p.clientX - r.left) * W / r.width, (p.clientY - r.top) * H / r.height];
+    return [(p.clientX - r.left) * G.W / r.width, (p.clientY - r.top) * G.H / r.height];
   };
-  gEls.forEach((el, i) => {
-    el.addEventListener('pointerdown', ev => {
-      drag = i; nodes[i]._pin = true; ev.preventDefault();
-      gEls.forEach(x => x.classList.remove('gn-sel'));
-      el.classList.add('gn-sel');
-      showNode(nodes[i]);
-    });
-    el.addEventListener('dblclick', () => {
-      const n = nodes[i];
-      if (n.type === 'client' && !n.root && n.sub) location.hash = '#mijoz/' + n.sub;
-    });
-  });
   svg.addEventListener('pointermove', ev => {
-    if (drag === null) return;
+    if (G.drag === null) return;
     const [x, y] = pos(ev);
-    nodes[drag].x = x; nodes[drag].y = y;
-    reheat();
+    G.nodes[G.drag].x = x; G.nodes[G.drag].y = y;
+    loop();
   });
+  const onUp = () => {
+    if (G.drag !== null) G.nodes[G.drag]._pin = G.nodes[G.drag].root;
+    G.drag = null;
+  };
+  addEventListener('pointerup', onUp);
+  addEventListener('pointercancel', onUp);
+  grafCleanup = () => {
+    cancelAnimationFrame(G.rafId);
+    removeEventListener('pointerup', onUp);
+    removeEventListener('pointercancel', onUp);
+  };
+
+  render();
+  G.rafId = requestAnimationFrame(tick);
 }
 
 /* ================================================================== boot *//* ================================================================== boot */

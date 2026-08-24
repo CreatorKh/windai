@@ -32,7 +32,8 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 # Potoloklar — FindDroppers dagi kabi nomlanadi va har biri o'lchab tanlangan.
-_GRAPH_SIMILAR = 8          # nechta o'xshash mijoz ko'rsatiladi
+_GRAPH_SIMILAR = 8          # standart; so'rovda ?n= bilan 24 gacha oshiriladi
+_GRAPH_SIMILAR_MAX = 24     # potolok — undan ko'p vershina o'qilmaydi
 _GRAPH_CANDIDATES = 2160    # butun train — 2160 x 20 masofa ~ 40 ms, arzon
 _GRAPH_MESH_MAX = 28        # o'xshashlar orasidagi qirralar potoloki
 _GRAPH_TOP_REASONS = 3      # qirra ustida nechta "eng yaqin belgi" yoziladi
@@ -89,7 +90,8 @@ class GraphBuilder:
                 for k, kind, _, _ in sc.spec]
 
     # -- qurish ---------------------------------------------------------------
-    def build(self, applicant_id: str) -> Optional[dict]:
+    def build(self, applicant_id: str, n: int = _GRAPH_SIMILAR) -> Optional[dict]:
+        n = max(3, min(int(n or _GRAPH_SIMILAR), _GRAPH_SIMILAR_MAX))
         eng = self.engine
         profile = eng.data.profile(applicant_id)
         if not profile.get("applicant"):
@@ -153,9 +155,9 @@ class GraphBuilder:
                     continue
                 scored.append((self._dist(vec, row["vec"]), row))
             scored.sort(key=lambda p: p[0])
-            similar = scored[:_GRAPH_SIMILAR]
-            if len(scored) > _GRAPH_SIMILAR:
-                cuts["similar"] = {"kept": _GRAPH_SIMILAR, "total": len(scored)}
+            similar = scored[:n]
+            if len(scored) > n:
+                cuts["similar"] = {"kept": n, "total": len(scored)}
         except Exception:
             fails.append("similar")
         took["similar"] = int((time.time() - t) * 1000)
