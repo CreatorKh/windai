@@ -1,0 +1,9 @@
+{
+  "arizachi": 2700,
+  "ariza": 2700,
+  "train_ariza": 2160,
+  "test_ariza": 540,
+  "train_defolt_ulushi_%": 11.48,
+  "baholash": "test arizalar bo'yicha AUC-ROC va Gini. Qo'shimcha: rad etilgan arizaning sababi ko'rsatilganmi (izohlanuvchanlik — qo'lda baholanadi).",
+  "eslatma": "Yashirin model: DTI, kirim o'zgaruvchanligi (CV), ish staji, bandlik turi, o'tmishdagi kechikish va so'ralgan summa/daromad nisbati. Jamoa shu omillarni topa olishi kerak."
+}

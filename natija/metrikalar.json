@@ -1,0 +1,30 @@
+{
+  "auc": 0.7675,
+  "gini": 0.5349,
+  "ks": 0.4796,
+  "brier": 0.07818,
+  "ceiling_auc": 0.8042,
+  "coverage": 540,
+  "n_key": 540,
+  "defolt_ulushi": 0.1037,
+  "version": "v1",
+  "qarorlar": {
+    "RAD_ETILDI": 122,
+    "QOLDA_KORIB_CHIQISH": 267,
+    "MAQULLANDI": 151
+  },
+  "qaror_sifati": {
+    "RAD_ETILDI": {
+      "n": 122,
+      "defolt": 0.2869
+    },
+    "QOLDA_KORIB_CHIQISH": {
+      "n": 267,
+      "defolt": 0.0562
+    },
+    "MAQULLANDI": {
+      "n": 151,
+      "defolt": 0.0397
+    }
+  }
+}

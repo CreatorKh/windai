@@ -1,0 +1,27 @@
+services:
+  # 1) Batch: skorkartani o'rgatadi va natija/kredit_qarorlari.csv ni yozadi.
+  batch:
+    build: .
+    command: python -m app.pipeline --evaluate
+    environment:
+      DB_PATH: /data/kredit.db
+    volumes:
+      - ./natija:/srv/natija
+      - engine-data:/data
+
+  # 2) Web: ariza formasi + underwriter paneli (http://localhost:8000).
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_PATH: /data/kredit.db
+    volumes:
+      - ./natija:/srv/natija
+      - engine-data:/data
+    depends_on:
+      batch:
+        condition: service_completed_successfully
+
+volumes:
+  engine-data:

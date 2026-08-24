@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WINDAI — Tushuntiriladigan kredit skoring va limit dvigateli</title>
+<link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+<link rel="stylesheet" href="/static/styles.css">
+<script>
+  /* Temani CSS dan OLDIN qo'yamiz: aks holda qorong'i temada sahifa bir lahza
+     oq chaqnab ketadi (initTheme() body oxirida ishlaydi). */
+  (function () {
+    try {
+      var t = localStorage.getItem('theme');
+      var dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      if (dark) document.documentElement.classList.add('dark');
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<!-- ==================================================== KIRISH EKRANI -->
+<div id="login-gate" hidden>
+  <div class="gate-box">
+    <div class="gate-brand">
+      <svg class="mark mark-lg" viewBox="0 0 32 32" role="img" aria-label="WINDAI">
+        <mask id="gm"><rect width="32" height="32" fill="#fff"/>
+          <path d="M4 3 L16 16 L4 29 Z M28 3 L16 16 L28 29 Z" fill="#000"/></mask>
+        <rect width="32" height="32" fill="var(--accent)" mask="url(#gm)"/>
+      </svg>
+      <div>
+        <div class="gate-name">WINDAI</div>
+        <div class="gate-sub">Tushuntiriladigan kredit skoring va limit dvigateli</div>
+      </div>
+    </div>
+
+    <form class="gate-form" id="login-form" autocomplete="off">
+      <div class="label" style="margin-bottom:14px">Tizimga kirish</div>
+      <label class="field"><span>Login</span>
+        <input id="lg-login" autocomplete="username" required></label>
+      <label class="field"><span>Parol</span>
+        <input id="lg-parol" type="password" autocomplete="current-password" required></label>
+      <div id="lg-error" hidden></div>
+      <button class="btn" type="submit" style="width:100%">Kirish</button>
+    </form>
+
+    <div class="gate-demo">
+      <div class="demo-strip">Demo rejim — parollar ataylab ochiq ko‘rsatilgan</div>
+      <div class="label" style="margin:12px 0 8px">Rolni tanlab ko‘ring</div>
+      <div id="lg-accounts" class="demo-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SHAPKA -->
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" role="img" aria-label="WINDAI">
+        <mask id="m"><rect width="32" height="32" fill="#fff"/>
+          <path d="M4 3 L16 16 L4 29 Z M28 3 L16 16 L28 29 Z" fill="#000"/></mask>
+        <rect width="32" height="32" fill="var(--accent)" mask="url(#m)"/>
+      </svg>
+      <span class="brand-name">WINDAI</span>
+      <span class="brand-sub">Kredit qarorlari platformasi</span>
+    </div>
+
+    <div class="top-chips" id="top-chips"></div>
+
+    <div class="top-user">
+      <div class="who" id="who" hidden>
+        <span class="avatar" id="who-avatar"></span>
+        <span class="who-txt">
+          <b id="who-ism"></b>
+          <em id="who-rol"></em>
+        </span>
+      </div>
+      <button class="btn ghost mini" id="theme"
+        aria-label="Yorug‘/qorong‘i temani almashtirish">Tema</button>
+      <button class="btn ghost mini" id="logout" hidden>Chiqish</button>
+    </div>
+  </div>
+</header>
+
+<!-- ======================================================= NAVIGATSIYA -->
+<div class="navbar">
+  <nav class="tabs" role="tablist" aria-label="Bo‘limlar">
+    <button role="tab" data-tab="ariza"       data-perm="ariza:yuborish">Yangi ariza</button>
+    <button role="tab" data-tab="underwriter" data-perm="qarorlar:korish">Qarorlar oqimi</button>
+    <button role="tab" data-tab="mijoz"       data-perm="mijoz:korish">Mijoz kartasi</button>
+    <span class="nav-sep" aria-hidden="true"></span>
+    <button role="tab" data-tab="skorkarta"   data-perm="skorkarta:korish">Skoring modeli</button>
+    <button role="tab" data-tab="whatif"      data-perm="simulyatsiya">Sinov maydoni</button>
+    <button role="tab" data-tab="versiya"     data-perm="skorkarta:korish">Versiyalar va audit</button>
+  </nav>
+</div>
+
+<main class="shell">
+  <div class="page-head">
+    <h1 id="page-title">Yangi ariza</h1>
+    <p id="page-sub" class="dim"></p>
+  </div>
+  <p id="live-status" role="status" class="sr"></p>
+
+  <!-- ============================================================ ARIZA -->
+  <section id="tab-ariza">
+    <div class="split">
+      <form class="card" id="form-ariza" autocomplete="off">
+        <div class="modes" role="radiogroup" aria-label="Ariza turi">
+          <button type="button" class="mode" data-mode="yangi" aria-checked="true"
+            role="radio">Yangi mijoz</button>
+          <button type="button" class="mode" data-mode="mavjud" aria-checked="false"
+            role="radio">Mavjud mijoz</button>
+        </div>
+
+        <!-- mavjud mijoz rejimi -->
+        <div id="mode-mavjud" hidden>
+          <label class="field"><span>Mijozni tanlang</span>
+            <select id="f-applicant"></select></label>
+          <div id="mavjud-karta"></div>
+        </div>
+
+        <!-- yangi mijoz rejimi -->
+        <div id="mode-yangi">
+          <div class="presets">
+            <span class="label">Tayyor senariylar</span>
+            <div class="preset-row">
+              <button type="button" class="preset ok"  data-preset="ideal">Ishonchli mijoz</button>
+              <button type="button" class="preset mid" data-preset="chegaraviy">Chegaraviy holat</button>
+              <button type="button" class="preset no"  data-preset="yuqori_xavf">Yuqori xavf</button>
+            </div>
+          </div>
+
+          <fieldset class="grp">
+            <legend><b>01</b> Mijoz</legend>
+            <div class="grid g2">
+              <label class="field"><span>Yosh</span>
+                <input id="f-yosh" type="number" value="34" min="16" max="90">
+                <em class="hint">18–70 dan tashqarida — avtomatik rad. Ballga ta’sir qilmaydi.</em></label>
+              <label class="field"><span>Oila a’zolari</span>
+                <input id="f-oila" type="number" value="3" min="1" max="15"></label>
+            </div>
+            <div class="grid g2">
+              <label class="field"><span>Bandlik turi</span>
+                <select id="f-bandlik"></select>
+                <em class="hint">«Ishsiz» — avtomatik rad.</em></label>
+              <label class="field"><span>Ma’lumot darajasi</span>
+                <select id="f-talim"></select></label>
+            </div>
+            <div class="grid g2">
+              <label class="field"><span>Joriy ish joyidagi staj, oy</span>
+                <input id="f-staj" type="number" value="36" min="0">
+                <em class="hint">3 oydan kam — qo‘lda ko‘rib chiqish.</em></label>
+              <label class="field"><span>Bizning bank mijozi, oy</span>
+                <input id="f-tarix" type="number" value="24" min="0">
+                <em class="hint">0 = yangi mijoz.</em></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="grp">
+            <legend><b>02</b> Daromad va pul oqimi</legend>
+            <label class="field wide"><span>Bank hisobiga oylik tushum</span>
+              <input id="f-kirim" class="money big" inputmode="numeric" type="text" value="6200000">
+              <div class="quick" data-target="#f-kirim">
+                <button type="button" data-v="3000000">3 mln</button>
+                <button type="button" data-v="5000000">5 mln</button>
+                <button type="button" data-v="10000000">10 mln</button>
+                <button type="button" data-v="20000000">20 mln</button>
+              </div>
+              <em class="hint">12 oylik medianasi. Ball aynan shu raqamdan hisoblanadi.</em></label>
+            <div class="grid g2">
+              <label class="field"><span>Deklaratsiya bo‘yicha daromad</span>
+                <input id="f-dekl" class="money" inputmode="numeric" type="text" value="6000000">
+                <em class="hint" id="hint-gap"></em></label>
+              <label class="field"><span>Daromad barqarorligi</span>
+                <select id="f-cv">
+                  <option value="barqaror">Barqaror maosh</option>
+                  <option value="ozgaruvchan">Biroz o‘zgaruvchan</option>
+                  <option value="kuchli">Kuchli o‘zgaruvchan (mavsumiy, tadbirkor)</option>
+                </select>
+                <em class="hint">12 oylik tushum qanchalik tebranadi.</em></label>
+            </div>
+            <div class="grid g2">
+              <label class="field"><span>Oylik xarajat</span>
+                <input id="f-chiqim" class="money" inputmode="numeric" type="text" value="3600000"></label>
+              <label class="field"><span>Naqd yechib olish</span>
+                <input id="f-naqd" class="money" inputmode="numeric" type="text" value="900000">
+                <em class="hint">Bank ko‘rmaydigan pul — xavfni oshiradi.</em></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="grp">
+            <legend><b>03</b> Mavjud kreditlar</legend>
+            <div class="grid g2">
+              <label class="field"><span>Boshqa banklarga oylik to‘lov</span>
+                <input id="f-yuk" class="money" inputmode="numeric" type="text" value="800000"></label>
+              <label class="field"><span>Faol kreditlar soni</span>
+                <input id="f-nloan" type="number" value="1" min="0" max="10"></label>
+            </div>
+            <div class="grid g2">
+              <label class="field"><span>Umumiy qarz qoldig‘i</span>
+                <input id="f-qoldiq" class="money" inputmode="numeric" type="text" value="9000000"></label>
+              <label class="field"><span>Eng uzun kechikish, kun</span>
+                <input id="f-kechikish" type="number" value="0" min="0" max="365">
+                <em class="hint">90 kundan ortiq — avtomatik rad.</em></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <fieldset class="grp">
+          <legend><b>04</b> Kredit so‘rovi</legend>
+          <label class="field wide"><span>So‘ralayotgan summa</span>
+            <input id="f-summa" class="money big" inputmode="numeric" type="text" value="25000000">
+            <div class="quick" data-target="#f-summa">
+              <button type="button" data-v="10000000">10 mln</button>
+              <button type="button" data-v="25000000">25 mln</button>
+              <button type="button" data-v="50000000">50 mln</button>
+              <button type="button" data-v="100000000">100 mln</button>
+            </div></label>
+          <div class="grid g2">
+            <label class="field"><span>Muddat</span><select id="f-muddat"></select></label>
+            <label class="field"><span>Maqsad</span><select id="f-maqsad"></select></label>
+          </div>
+        </fieldset>
+
+        <div class="live" id="live-panel"></div>
+
+        <div class="row" style="margin-top:14px">
+          <button class="btn" type="submit">Qaror olish</button>
+          <span class="code faint">Qaror o‘zgarmas jurnalga yoziladi</span>
+        </div>
+      </form>
+
+      <div id="ariza-natija">
+        <div class="card intro">
+          <div class="label">qanday ishlaydi</div>
+          <h2 style="margin:10px 0 12px">Har bir qaror — sababi bilan</h2>
+          <p class="data dim" style="margin-bottom:14px">Chapdagi formani to‘ldiring.
+            Tizim 12 oylik bank oqimi, mavjud qarz yuki va kredit tarixi asosida
+            ballni hisoblaydi va <b>nega aynan shunday</b> ekanini omil-omil ko‘rsatadi.</p>
+          <ol class="steps-intro">
+            <li><b>Ball va PD</b> — defolt ehtimoli bilan birga</li>
+            <li><b>Sodda izoh</b> — nima yordam berdi, nima to‘sqinlik qildi</li>
+            <li><b>Nima qilsam bo‘ladi</b> — aniq keyingi qadamlar</li>
+            <li><b>Texnik tafsilot</b> — underwriter va regulyator uchun</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================== UNDERWRITER -->
+  <section id="tab-underwriter" hidden>
+    <div class="grid g4" id="uw-kpi" style="margin-bottom:16px"></div>
+    <div class="grid g2" id="uw-overview" style="margin-bottom:16px"></div>
+    <div class="card" id="uw-portfel" style="margin-bottom:16px"></div>
+    <div class="split-wide">
+      <div class="card" style="padding:0">
+        <div class="card-head" style="padding:14px 16px 10px;margin-bottom:0">
+          <h3>Qarorlar oqimi</h3>
+          <div class="row">
+            <input id="uw-search" type="search" placeholder="Ariza ID"
+              style="height:26px;width:120px" autocomplete="off"
+              aria-label="Ariza ID bo‘yicha qidirish">
+            <select id="uw-filter" style="height:26px;width:auto">
+              <option value="">barchasi</option>
+              <option value="MAQULLANDI">ma’qullangan</option>
+              <option value="QOLDA_KORIB_CHIQISH">qo‘lda ko‘rib chiqish</option>
+              <option value="RAD_ETILDI">rad etilgan</option>
+            </select>
+            <button class="btn ghost mini" id="uw-refresh">Yangilash</button>
+          </div>
+        </div>
+        <div class="tw scroll-y"><table id="uw-table">
+          <thead><tr><th>Ariza</th><th>Qaror</th><th class="r">Ball</th>
+            <th class="r">PD</th><th class="r">Tavsiya</th><th>Xodim</th>
+            <th>Sabab</th></tr></thead>
+          <tbody><tr><td colspan="7" class="empty">yuklanmoqda…</td></tr></tbody>
+        </table></div>
+      </div>
+      <div id="uw-detail" aria-live="polite"><div class="card"><div class="empty">
+        Tafsilot uchun jadvaldan qatorni tanlang.</div></div></div>
+    </div>
+  </section>
+
+  <!-- ==================================================== MIJOZ KARTASI -->
+  <section id="tab-mijoz" hidden>
+    <div class="card" style="margin-bottom:16px">
+      <div class="row">
+        <input id="mk-search" type="search" style="flex:1;min-width:180px"
+          placeholder="Mijoz ID yoki ism bo‘yicha qidiring — masalan A000003"
+          autocomplete="off" aria-label="Mijoz qidirish">
+        <button class="btn ghost mini" id="mk-clear">Tozalash</button>
+      </div>
+      <div id="mk-results"></div>
+    </div>
+    <div id="mk-card"><div class="card"><div class="empty">
+      Mijozni qidiring yoki qarorlar oqimidan «karta →» tugmasini bosing.</div></div></div>
+  </section>
+
+  <!-- ======================================================== SKORKARTA -->
+  <section id="tab-skorkarta" hidden>
+    <div class="grid g4" id="sc-kpi" style="margin-bottom:16px"></div>
+    <div class="split-wide">
+      <div class="card" style="padding:0">
+        <div class="card-head" style="padding:14px 16px 10px;margin-bottom:0">
+          <h3>Belgilar: IV va koeffitsientlar</h3>
+          <span class="label">woe / iv binning</span></div>
+        <div class="tw"><table id="sc-table">
+          <thead><tr><th>Belgi</th><th class="r">IV</th><th>Kuch</th>
+            <th class="r">β</th><th class="r">Binlar</th></tr></thead>
+          <tbody></tbody></table></div>
+      </div>
+      <div id="sc-bins"><div class="card"><div class="empty">
+        Bucket’larni ko‘rish uchun belgini tanlang.</div></div></div>
+    </div>
+  </section>
+
+  <!-- =========================================================== WHATIF -->
+  <section id="tab-whatif" hidden>
+    <div class="split">
+      <div class="card">
+        <div class="card-head"><h3>Sinov maydoni</h3>
+          <span class="label">saqlanmaydi</span></div>
+        <p class="data dim" style="margin-bottom:14px">«Yangi ariza» ekranidagi
+          qiymatlar bazaviy holat sifatida olinadi. Slayderni suring —
+          ball, limit va omillar hissasi darhol qayta hisoblanadi.</p>
+        <label class="field"><span>Oylik daromad: <b id="wi-inc-v" class="num"></b></span>
+          <input id="wi-inc" type="range" autocomplete="off" min="20" max="300" value="100"></label>
+        <label class="field"><span>So‘ralgan summa: <b id="wi-sum-v" class="num"></b></span>
+          <input id="wi-sum" type="range" autocomplete="off" min="10" max="300" value="100"></label>
+        <label class="field"><span>Mavjud oylik yuk: <b id="wi-yuk-v" class="num"></b></span>
+          <input id="wi-yuk" type="range" autocomplete="off" min="0" max="200" value="100"></label>
+        <label class="field"><span>Muddat</span>
+          <select id="wi-muddat" autocomplete="off"></select></label>
+        <div class="row"><button class="btn ghost" id="wi-reset">Bazaviy holat</button></div>
+        <p class="code faint" style="margin-top:12px">Hisob forma maydonlaridan
+          qurilgan profil bo‘yicha ketadi, shuning uchun bazaviy ball
+          «Yangi ariza» natijasidan bir necha ballga farq qilishi mumkin.</p>
+      </div>
+      <div id="wi-natija" aria-live="polite"><div class="empty">
+        Bazaviy holat hisoblanmoqda…</div></div>
+    </div>
+  </section>
+
+  <!-- ========================================================== VERSIYA -->
+  <section id="tab-versiya" hidden>
+    <div class="split-wide">
+      <div class="stack">
+        <div class="card">
+          <div class="card-head"><h3>Skorkarta versiyalari</h3>
+            <span class="label">SCD Type 2 · valid_from / valid_to</span></div>
+          <div class="tw"><table id="ver-table">
+            <thead><tr><th>#</th><th>Versiya</th><th class="r">AUC CV</th>
+              <th class="r">KS</th><th>valid_from</th><th>valid_to</th>
+              <th>Holat</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Versiyalarni taqqoslash</h3>
+            <span class="label">bitta ariza, ikki skorkarta</span></div>
+          <div class="row" style="margin-bottom:12px">
+            <input id="cmp-app" placeholder="AP002161" style="width:150px">
+            <select id="cmp-a" style="width:auto"></select>
+            <span class="dim">→</span>
+            <select id="cmp-b" style="width:auto"></select>
+            <button class="btn mini" id="cmp-run">Taqqoslash</button>
+          </div>
+          <div id="cmp-out"><div class="empty">Ariza ID va ikki versiyani tanlang.</div></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card" id="rt-card" data-perm="skorkarta:orgatish">
+          <div class="card-head"><h3>Yangi versiya o‘rgatish</h3>
+            <span class="label">retrain</span></div>
+          <div class="g2 grid">
+            <label class="field"><span>Versiya nomi</span><input id="rt-ver" value="v2"></label>
+            <label class="field"><span>L2</span><input id="rt-l2" type="number" value="1" step="0.5" min="0"></label>
+          </div>
+          <label class="field"><span>Izoh</span><input id="rt-izoh" value="L2 pasaytirilgan"></label>
+          <button class="btn" id="rt-run">O‘rgatish</button>
+          <div id="rt-out" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Qaror jurnali</h3>
+            <span class="label">o‘zgarmas + hash zanjiri</span></div>
+          <div id="jr-out"><div class="loading">yuklanmoqda…</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

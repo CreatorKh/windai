@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+kredit.db*
+*.log
+.DS_Store
+teammate_scoring/
