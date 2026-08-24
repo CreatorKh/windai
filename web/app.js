@@ -313,11 +313,22 @@ function liveCalc() {
   if (!state.meta) return;
   const pol = state.meta.siyosat;
   const f = readForm();
-  const income = resolveIncome(f.oylik_daromad, f.deklaratsiya_daromad);
+  let income, existing;
+  if (f.applicant_id) {
+    // Mavjud mijoz: jonli hisob ham BANK ma'lumotidan yursin — aks holda
+    // chapda yashil 35%, qarorda esa boshqa raqam chiqadi.
+    const k = state.mavjudKarta && state.mavjudKarta.korsatkichlar;
+    if (!k) { box.innerHTML = ''; return; }     // karta hali yuklanmoqda
+    income = k.daromad_median;
+    existing = k.mavjud_oylik_tolov;
+  } else {
+    income = resolveIncome(f.oylik_daromad, f.deklaratsiya_daromad);
+    existing = f.mavjud_oylik_yuk;
+  }
   const pay = annuity(f.sorlgan_summa, f.muddat_oy);
-  const dti = income > 0 ? (f.mavjud_oylik_yuk + pay) / income : 99;
+  const dti = income > 0 ? (existing + pay) / income : 99;
   const pti = income > 0 ? pay / income : 99;
-  const free = income - f.mavjud_oylik_yuk - pay;
+  const free = income - existing - pay;
 
   const cls = (v, lim) => (v <= lim ? 'ok' : 'no');
   box.innerHTML = `
@@ -335,7 +346,7 @@ function liveCalc() {
         <div class="s">PTI ${pct(pti)} · shift ${pct(pol.MAX_PTI, 0)}</div></div>
     </div>`;
 
-  const gap = f.deklaratsiya_daromad > 0
+  const gap = (!f.applicant_id && f.deklaratsiya_daromad > 0)
     ? f.oylik_daromad / f.deklaratsiya_daromad : 1;
   $('#hint-gap').textContent = Math.abs(gap - 1) >= 0.3
     ? 'Bank tushumi deklaratsiyadan sezilarli farq qiladi — bu ballni pasaytiradi.'
@@ -426,6 +437,7 @@ async function loadMavjudKarta(id) {
   box.innerHTML = '<div class="loading">yuklanmoqda…</div>';
   try {
     const d = await api('/api/mijoz/' + encodeURIComponent(id));
+    state.mavjudKarta = d;
     const a = d.applicant, k = d.korsatkichlar;
     box.innerHTML = `
       <div class="card flat" style="margin-bottom:14px">
@@ -448,6 +460,7 @@ async function loadMavjudKarta(id) {
           qaror bank ma’lumotlari asosida chiqadi.
           <a href="#mijoz/${esc(id)}">To‘liq karta →</a></p>
       </div>`;
+    liveCalc();                       // karta kelgach jonli hisob bankdan yuradi
   } catch (e) {
     box.innerHTML = `<div class="err">${esc(e.message)}</div>`;
   }
@@ -457,10 +470,25 @@ function readForm() {
   const n = id => rawNum($(id));
   const i = id => Number($(id).value || 0);
   const applicant = $('#mode-mavjud').hidden ? '' : $('#f-applicant').value;
+
+  // MAVJUD MIJOZ REJIMI: yashirin "yangi mijoz" maydonlarini YUBORMAYMIZ.
+  // Ular oldingi presetdan qolgan qiymatlarni saqlaydi va serverda
+  // max(forma, bank) orqali soxta DTI yasar edi: kartada "mavjud to'lov 0",
+  // qarorda esa "to'lovlar daromadning 103% i" — bevosita qarama-qarshilik.
+  // Bank ma'lumotidagi mijoz uchun forma faqat KREDIT SO'ROVINI beradi.
+  if (applicant) {
+    return {
+      applicant_id: applicant,
+      sorlgan_summa: n('#f-summa'), muddat_oy: i('#f-muddat'),
+      maqsad: $('#f-maqsad').value,
+      mavjud_oylik_yuk: 0,          // server kredit registridan o'zi oladi
+    };
+  }
+
   const kirim = n('#f-kirim');
   const profile = CV_PROFILES[$('#f-cv').value] || CV_PROFILES.barqaror;
   return {
-    applicant_id: applicant || null,
+    applicant_id: null,
     yosh: i('#f-yosh'), oila_azolari: i('#f-oila'),
     bandlik: $('#f-bandlik').value, talim: $('#f-talim').value,
     ish_staji_oy: i('#f-staj'), mijoz_boldi_oy: i('#f-tarix'),

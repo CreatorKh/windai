@@ -198,11 +198,32 @@ def client_factors(score_result, feats: dict, sign: int, n: int = 3):
 
 def humanize(contribution, feats: dict) -> str:
     """Bitta omil hissasini mijoz tushunadigan gapga aylantiradi."""
+    return _humanize_signed(contribution, feats,
+                            "+" if contribution.points > 0 else "-")
+
+
+def humanize_for_list(contribution, feats: dict):
+    """Ro'yxat uchun: agar salbiy omilning matni ijobiy varianti bilan BIR XIL
+    chiqsa (masalan income_gap aslida mos bo'lsa), None qaytadi va omil
+    ro'yxatdan tushib qoladi — "to'sqinlik qildi: deklaratsiya bilan mos"
+    degan bema'nilik ko'rinmasin. WOE bucket baribir ballda hisobda qoladi,
+    bu faqat MATN darajasidagi filtr.
+    """
+    sign = "+" if contribution.points > 0 else "-"
+    txt = _humanize_signed(contribution, feats, sign)
+    if sign == "-":
+        other = _humanize_signed(contribution, feats, "+")
+        if txt == other:
+            return None
+    return txt
+
+
+def _humanize_signed(contribution, feats: dict, sign: str) -> str:
     tmpl = HUMAN.get(contribution.key)
     if not tmpl:
         return contribution.label
     try:
-        return tmpl["+" if contribution.points > 0 else "-"](feats)
+        return tmpl[sign](feats)
     except (KeyError, TypeError, ValueError, ZeroDivisionError):
         # Matn hech qachon qarorni buzmasin: eng yomon holatda texnik nom.
         return contribution.label
@@ -238,10 +259,11 @@ def next_steps(decision) -> List[str]:
         steps.append(f"Muddatni uzaytiring (hozir {oy(term)}) — oylik to'lov kamayadi "
                      f"va qarz yuki chegara ichiga tushadi.")
 
-    # 3) Mavjud yuk.
-    if f.get("dti_current", 0) > 0.25 and f.get("active_count", 0) >= 1:
-        steps.append("Mavjud kreditlaringizdan birini yopsangiz, qarz yuki pasayadi va "
-                     "limit sezilarli oshadi.")
+    # 3) Mavjud yuk. `active_count` sharti olib tashlandi: yuk kredit
+    # registridan emas, ariza maydonidan ham kelishi mumkin (boshqa bank).
+    if f.get("dti_current", 0) > 0.25:
+        steps.append("Mavjud oylik to'lovlaringiz daromadga nisbatan og'ir — "
+                     "bittasini yopsangiz, qarz yuki pasayadi va limit oshadi.")
 
     # 4) Knock-out sabablari — vaqt talab qiladigan maslahat.
     if str(f.get("bandlik", "")).strip().lower() in UNEMPLOYED_LABELS:
@@ -267,8 +289,23 @@ def next_steps(decision) -> List[str]:
                      "Qo'shimcha daromad hujjatini keltiring.")
 
     if not steps:
-        steps.append("Qo'shimcha shart yo'q — hujjatlarni tasdiqlash uchun bank xodimi "
-                     "siz bilan bog'lanadi.")
+        # Zaxira matni QARORGA MOS bo'lishi shart. Rad etilgan mijozga
+        # "qo'shimcha shart yo'q" deyish — bevosita qarama-qarshilik
+        # (skrinshotda aynan shu ko'ringan edi).
+        if decision.qaror == "RAD_ETILDI":
+            if afford <= 0:
+                steps.append("Hozirgi daromad oqimi yangi kredit to'lovini "
+                             "ko'tarmaydi. Daromadingizni bank hisobiga muntazam "
+                             "o'tkazib boring va 3-6 oydan so'ng qayta murojaat qiling.")
+            else:
+                steps.append("Ball chegaradan past. Bank bilan tarixingizni "
+                             "mustahkamlang va bir necha oydan so'ng qayta urinib ko'ring.")
+        elif decision.qaror == "QOLDA_KORIB_CHIQISH":
+            steps.append("Hujjatlaringizni tayyorlab turing — underwriter arizangizni "
+                         "1 ish kunida ko'rib chiqadi.")
+        else:
+            steps.append("Qo'shimcha shart yo'q — hujjatlarni tasdiqlash uchun bank "
+                         "xodimi siz bilan bog'lanadi.")
     return steps[:4]
 
 
@@ -362,7 +399,11 @@ def client_explanation(decision, top_n: int = 3) -> dict:
     minus = client_factors(decision.score, f, -1, top_n)
 
     yordam = [{"matn": humanize(c, f), "ball": round(c.points, 1)} for c in plus]
-    tosqinlik = [{"matn": humanize(c, f), "ball": round(c.points, 1)} for c in minus]
+    # None = matn qarama-qarshi chiqdi (masalan "deklaratsiya bilan mos" ni
+    # to'sqinlik deb ko'rsatib bo'lmaydi) — bunday omil ro'yxatdan tushadi.
+    tosqinlik = [{"matn": t, "ball": round(c.points, 1)}
+                 for c in minus
+                 for t in [humanize_for_list(c, f)] if t is not None]
 
     # Bo'sh ro'yxat ham ma'no tashishi kerak — UI da "—" turib qolmasin.
     if not tosqinlik and decision.qaror == "MAQULLANDI":
