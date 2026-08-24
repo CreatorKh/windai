@@ -70,6 +70,26 @@
   th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--hair)}
   th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
   td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+
+  /* ERD slayd */
+  .erd{display:grid;grid-template-columns:1fr 1.6fr;gap:26px;align-items:start}
+  .erd-col .lbl{margin-bottom:12px}
+  .ent{background:var(--card);border:1.5px solid var(--hair);border-radius:12px;
+    margin-bottom:14px;overflow:hidden;font-size:13px}
+  .ent header{padding:8px 14px;font-weight:700;background:var(--raised);
+    border-bottom:1px solid var(--hair);display:flex;justify-content:space-between;
+    align-items:center}
+  .ent header em{font-style:normal;font-size:10px;color:var(--faint);
+    letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+  .ent ul{list-style:none;padding:6px 14px 10px}
+  .ent li{padding:2.5px 0;color:var(--dim);display:flex;gap:8px}
+  .ent li b{color:var(--ink);font-weight:600}
+  .ent li .k{font-size:9px;font-weight:700;color:var(--accent);
+    letter-spacing:.06em;align-self:center}
+  .ent.hot{border-color:var(--accent)}
+  .rel{font-size:12.5px;color:var(--dim);padding:5px 0 5px 20px;position:relative}
+  .rel:before{content:"⟶";position:absolute;left:0;color:var(--accent);font-weight:700}
+  .rel b{color:var(--ink)}
   .hint{position:fixed;left:22px;bottom:18px;font-size:12px;color:var(--faint)}
   kbd{background:var(--raised);border:1px solid var(--hair);border-radius:5px;
     padding:1px 7px;font-family:inherit}
@@ -247,6 +267,52 @@
       </div>
     </div>
   </div>
+</section>
+
+
+<!-- 6.5 · ERD -->
+<section class="slide">
+  <div class="tag">ERD — ma'lumotlar sxemasi</div>
+  <h2>Dataset <b>faqat o'qiladi</b>, operatsion iz — bazada</h2>
+  <div class="grow"><div class="erd">
+    <div class="erd-col">
+      <div class="lbl">Dataset (CSV, o'zgarmas manba)</div>
+      <div class="ent"><header>APPLICANTS <em>2700</em></header>
+        <ul><li><span class="k">PK</span><b>applicant_id</b></li>
+        <li>bandlik · yosh · staj · daromad · viloyat</li></ul></div>
+      <div class="ent"><header>MONTHLY_FLOWS <em>12 oy × mijoz</em></header>
+        <ul><li><span class="k">FK</span><b>applicant_id</b></li>
+        <li>kirim · chiqim · naqd · qoldiq</li></ul></div>
+      <div class="ent"><header>EXISTING_LOANS</header>
+        <ul><li><span class="k">FK</span><b>applicant_id</b></li>
+        <li>bank · oylik to'lov · qoldiq · kechikish</li></ul></div>
+    </div>
+    <div class="erd-col">
+      <div class="lbl">Operatsion baza (SQLite)</div>
+      <div class="ent"><header>APPLICATION</header>
+        <ul><li><span class="k">PK</span><b>application_id</b>
+          &nbsp;<span class="k">FK</span>applicant_id</li>
+        <li>manba (dataset | web) · payload</li></ul></div>
+      <div class="ent hot"><header>DECISION_JOURNAL <em>append-only</em></header>
+        <ul><li><span class="k">FK</span><b>application_id · version_id · kim</b></li>
+        <li>qaror · ball · pd · sabab · payload</li>
+        <li><b>prev_hash → hash</b> — SHA-256 zanjir; UPDATE/DELETE trigger bilan taqiqlangan</li></ul></div>
+      <div class="ent"><header>SCORECARD_VERSION <em>SCD Type 2</em></header>
+        <ul><li><span class="k">UK</span><b>version</b> · payload (binning + koef.)</li>
+        <li><b>valid_from / valid_to</b> · is_current — eski versiya o'chmaydi</li></ul></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
+        <div class="ent"><header>DECISION_FACTOR</header>
+          <ul><li><span class="k">FK</span>decision_id</li>
+          <li>belgi · bucket · woe · β · ball hissasi</li></ul></div>
+        <div class="ent"><header>APP_USER / SESSION</header>
+          <ul><li>4 rol · pbkdf2 parol</li>
+          <li>sliding sessiya (60 min)</li></ul></div>
+      </div>
+      <div class="rel"><b>applicants → application → decision_journal</b> — ariza → qaror → tarix zanjiri</div>
+      <div class="rel"><b>scorecard_version → decision_journal</b> — har qaror qaysi versiya bilan chiqqani</div>
+      <div class="rel"><b>app_user → decision_journal.kim</b> — javobgar xodim hash ichida</div>
+    </div>
+  </div></div>
 </section>
 
 <!-- 7 · YAKUN -->
