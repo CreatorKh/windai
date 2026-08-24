@@ -1226,14 +1226,24 @@ async function loadScorecard() {
   ].map(([l, v]) => `<div class="kpi-box"><div class="label">${l}</div>
       <div class="kpi">${v}</div></div>`).join('');
 
-  $('#sc-table tbody').innerHTML = sc.iv.map((r, i) => `
+  // Belgi qanchalik kuchli ajratishini IV raqami emas, KO'RINADIGAN ustun
+  // ko'rsatadi — hakam "0.5683" ni emas, "juda kuchli" polosani o'qiydi.
+  const maxIv = Math.max(0.01, ...sc.iv.map(r => r.iv));
+  $('#sc-table tbody').innerHTML = sc.iv.map((r, i) => {
+    const eng = r.bins.reduce((a, b) =>
+      (b.nisbat || 0) > (a.nisbat || 0) ? b : a, r.bins[0] || {});
+    return `
     <tr class="tr-click" data-i="${i}">
-      <td>${esc(r.label)}<span class="bin code faint" style="display:block">${
-        esc(r.key)}</span></td>
-      <td class="r num">${r.iv.toFixed(4)}</td>
-      <td><span class="chip">${esc(r.kuch)}</span></td>
-      <td class="r num">${r.beta ? r.beta.toFixed(3) : '—'}</td>
-      <td class="r num">${r.bins.length}</td></tr>`).join('');
+      <td>${esc(r.label)}
+        <span class="bin code faint" style="display:block">${esc(r.key)}</span></td>
+      <td style="width:150px">
+        <div class="iv-bar"><i style="width:${(r.iv / maxIv * 100).toFixed(0)}%"></i></div>
+        <span class="bin code faint">${esc(r.kuch)}</span></td>
+      <td class="dim" style="font-size:12px">${eng.human
+        ? `eng xavfli: <b>${esc(eng.human)}</b>${eng.nisbat
+            ? ` — o‘rtachadan ${eng.nisbat.toFixed(1)}× ko‘p` : ''}`
+        : '—'}</td></tr>`;
+  }).join('');
 
   $$('#sc-table tbody tr').forEach(tr => tr.onclick = () => {
     $$('#sc-table tbody tr').forEach(x => x.classList.remove('sel'));
@@ -1245,27 +1255,38 @@ async function loadScorecard() {
 
 function showBins(r) {
   if (!r) return;
-  const maxW = Math.max(1, ...r.bins.map(b => Math.abs(b.woe)));
+  const base = r.base_rate || 0.115;
   $('#sc-bins').innerHTML = `<div class="card">
     <div class="card-head"><h3>${esc(r.label)}</h3>
-      <span class="label">IV ${r.iv.toFixed(4)} · ${esc(r.kuch)}</span></div>
-    <p class="code faint" style="margin-bottom:10px">β = ${
-      r.beta ? r.beta.toFixed(4) : 'modelda ishlatilmagan'} ·
-      WOE = ln(P(bad)/P(good))</p>
-    <div class="tw"><table><thead><tr><th>Bucket</th><th class="r">n</th>
-      <th class="r">bad %</th><th class="r">WOE</th><th></th></tr></thead>
+      <span class="chip">${esc(r.kuch)}</span></div>
+    <p class="data dim" style="margin-bottom:12px">Bu belgi bo‘yicha mijozlar
+      guruhlarga bo‘lingan. Har guruhda <b>haqiqatan qancha mijoz defolt qilgani</b>
+      ko‘rsatilgan — ball aynan shu statistikadan chiqadi.</p>
+    <div class="tw"><table><thead><tr>
+      <th>Guruh</th><th class="r">Mijoz</th><th class="r">Defolt qilgan</th>
+      <th>Portfel o‘rtachasiga nisbatan</th></tr></thead>
       <tbody>${r.bins.map(b => {
-        const w = Math.abs(b.woe) / maxW * 46;
-        return `<tr><td class="code">${esc(b.label)}</td>
-          <td class="r num">${b.n}</td>
-          <td class="r num">${pct(b.bad_rate)}</td>
-          <td class="r num">${b.woe.toFixed(3)}</td>
-          <td style="width:110px"><div class="bar"><span class="mid"></span>
-            <i class="${b.woe > 0 ? 'neg' : 'pos'}" style="${b.woe > 0
-              ? `left:50%;width:${w}%` : `right:50%;width:${w}%`}"></i></div></td>
-          </tr>`; }).join('')}</tbody></table></div>
-    <p class="code faint" style="margin-top:10px">Musbat WOE = xavf yuqori
-      (ball kamayadi). Manfiy WOE = xavf past (ball oshadi).</p></div>`;
+        const k = b.nisbat || 0;
+        const xavf = k >= 1.6 ? 'hi' : k >= 1.05 ? 'mid' : 'low';
+        const w = Math.min(100, k / 3 * 100);
+        return `<tr>
+          <td><b>${esc(b.human || b.label)}</b></td>
+          <td class="r num">${nf.format(b.n)}</td>
+          <td class="r num">${(b.bad_rate * 100).toFixed(1)}%
+            <span class="bin code faint" style="display:block">${
+              Math.round(b.bad_rate * 100)} ta / 100 mijozdan</span></td>
+          <td style="width:190px">
+            <div class="risk-bar"><span class="one"></span>
+              <i class="${xavf}" style="width:${w.toFixed(0)}%"></i></div>
+            <span class="bin code ${xavf === 'hi' ? 'bad' : xavf === 'low' ? 'ok' : ''}">${
+              k ? (k >= 1 ? `${k.toFixed(1)}× ko‘p` : `${(1 / k).toFixed(1)}× kam`)
+                : '—'}</span></td>
+        </tr>`; }).join('')}</tbody></table></div>
+    <p class="code faint" style="margin-top:10px">Portfel o‘rtachasi —
+      ${(base * 100).toFixed(1)}% (vertikal chiziq). Undan o‘ngda — xavf yuqori,
+      ball kamayadi; chapda — xavf past, ball oshadi.
+      Texnik nomi: WOE = ln(P(bad)/P(good)), β = ${r.beta ? r.beta.toFixed(3) : '—'}.</p>
+  </div>`;
 }
 
 /* ================================================================ WHAT-IF */
@@ -1879,16 +1900,52 @@ async function demoScript() {
     // skrinshot uchun graf kartasi sahifa boshiga chiqadi
     const card = $('#graf-wrap')?.closest('.card');
     if (card) { card.parentElement.prepend(card); scrollTo(0, 0); }
-    // fokus rejimi: taqdimot iframe'i uchun faqat graf kartasi ko'rinadi
-    if (q.get('fokus') === 'graf') document.body.classList.add('fokus-graf');
   } else if (amal === 'whatif') {
     location.hash = '#whatif';
     await s(2200);
     const wi = $('#wi-inc');
     wi.value = q.get('daromad') || 165;
     wi.dispatchEvent(new Event('input'));
+    await s(1200);
   }
+  applyFocus();
   return true;
+}
+
+/* Fokus rejimi: sahifadan FAQAT bitta blok qoldiriladi.
+   Taqdimot iframe'i va skrinshotlar uchun — kadrda ortiqcha bo'sh joy
+   qolmasin, blok o'zi kadrni to'ldirsin. */
+const FOCUS_SEL = {
+  graf: '#graf-wrap',
+  natija: '#ariza-natija',
+  forma: '#form-ariza',
+  kpi: '#uw-overview',
+  portfel: '#uw-portfel',
+  jadval: '#tab-underwriter .split-wide',
+  profil: '#mk-card .mk-hero',
+  oqim: '#mk-card .card',
+  skorkarta: '#tab-skorkarta .split-wide',
+  whatif: '#tab-whatif .split',
+  versiya: '#tab-versiya .split-wide',
+};
+
+function applyFocus() {
+  const key = new URLSearchParams(location.search).get('fokus');
+  const sel = FOCUS_SEL[key];
+  if (!sel) return;
+  const target = document.querySelector(sel);
+  if (!target) return;
+  document.body.classList.add('fokus-rejim');
+  // maqsad elementdan yuqoriga ko'tarilib, barcha "aka-uka"larni yashiramiz
+  let node = target;
+  while (node && node !== document.body) {
+    for (const sib of [...node.parentElement.children]) {
+      if (sib !== node) sib.hidden = true;
+    }
+    node.classList.add('fokus-yol');
+    node = node.parentElement;
+  }
+  target.classList.add('fokus-nishon');
 }
 
 (async function boot() {

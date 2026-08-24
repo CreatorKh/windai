@@ -602,8 +602,24 @@ input[type=range]{accent-color:var(--accent);height:22px}
 }
 @media (prefers-reduced-motion:reduce){#ariza-natija .verdict-box{animation:none}}
 
-/* fokus=graf: taqdimot ichida jonli graf — sahifadan faqat graf kartasi qoladi */
-body.fokus-graf header.top, body.fokus-graf .navbar,
-body.fokus-graf .page-head, body.fokus-graf #tab-mijoz > .card:first-child,
-body.fokus-graf #mk-card .stack > :not(:first-child){display:none!important}
-body.fokus-graf .shell{padding:10px 14px;max-width:none}
+/* fokus rejimi: kadrda faqat bitta blok — taqdimot iframe'i va skrinshotlar uchun */
+body.fokus-rejim{background:var(--base)}
+body.fokus-rejim .shell{padding:0;max-width:none}
+body.fokus-rejim .fokus-yol{padding-left:0!important;padding-right:0!important;
+  margin:0!important;max-width:none!important;width:100%!important}
+body.fokus-rejim .fokus-nishon{margin:0!important}
+body.fokus-rejim .split,body.fokus-rejim .split-wide{gap:14px}
+
+/* skorkarta: IV polosasi va xavf nisbati */
+.iv-bar{height:7px;background:var(--track);border-radius:4px;overflow:hidden;
+  margin-bottom:4px}
+.iv-bar i{display:block;height:100%;background:var(--accent)}
+.risk-bar{position:relative;height:9px;background:var(--track);border-radius:5px;
+  overflow:hidden;margin-bottom:4px}
+.risk-bar .one{position:absolute;left:33.3%;top:-2px;bottom:-2px;width:1.5px;
+  background:var(--rule);z-index:2}
+.risk-bar i{display:block;height:100%}
+.risk-bar i.low{background:var(--risk-low)}
+.risk-bar i.mid{background:var(--risk-mid)}
+.risk-bar i.hi{background:var(--risk-hi)}
+.bin.bad{color:var(--risk-hi)} .bin.ok{color:var(--risk-low)}

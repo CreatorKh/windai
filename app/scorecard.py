@@ -210,15 +210,40 @@ class Scorecard:
         return ScoreResult(score, pd, neutral, contributions, self.version)
 
     # -- diagnostika ---------------------------------------------------------
-    def iv_table(self) -> List[dict]:
+    def iv_table(self, base_rate: Optional[float] = None) -> List[dict]:
+        """Belgilar jadvali — UI uchun INSON O'QIYDIGAN qo'shimchalar bilan.
+
+        Xom WOE va "< 0.04" kabi yorliqlar faqat mutaxassisga tushunarli.
+        Shu sababli har bucket uchun qo'shimcha hisoblanadi:
+          * `human` — o'lchov birligidagi oraliq ("4% dan kam", "2.1 mln gacha");
+          * `nisbat` — shu guruhdagi defolt ulushi PORTFEL o'rtachasiga nisbatan
+            necha barobar ("o'rtachadan 2.7 barobar ko'p") — WOE ning
+            jargonsiz muqobili.
+        """
+        # portfel o'rtacha defolt ulushi — barcha bucket'lardan tiklanadi
+        if base_rate is None:
+            n_all = sum(b.n for fb in self.binnings.values() for b in fb.bins) or 1
+            bad_all = sum(b.bad for fb in self.binnings.values() for b in fb.bins)
+            n_feat = max(1, len(self.binnings))
+            base_rate = (bad_all / n_feat) / max(1.0, n_all / n_feat)
+
+        betas = dict(zip(self.model.names, self.model.coef))
         out = []
-        for key, kind, label, _ in self.spec:
+        for key, kind, label, fmt in self.spec:
             fb = self.binnings[key]
+            bins = []
+            for b in fb.bins:
+                d = b.to_dict()
+                d["human"] = (b.label if kind == "categorical"
+                              else _human_range(d["lo"], d["hi"], fmt))
+                d["nisbat"] = (round(b.bad_rate / base_rate, 2)
+                               if base_rate > 0 and b.n else None)
+                bins.append(d)
             out.append({"key": key, "label": label, "iv": round(fb.iv, 4),
-                        "kuch": iv_strength(fb.iv), "kind": kind,
-                        "beta": round(dict(zip(self.model.names, self.model.coef)
-                                           ).get(key, 0.0), 4),
-                        "bins": [b.to_dict() for b in fb.bins]})
+                        "kuch": iv_strength(fb.iv), "kind": kind, "fmt": fmt,
+                        "beta": round(betas.get(key, 0.0), 4),
+                        "base_rate": round(base_rate, 4),
+                        "bins": bins})
         return sorted(out, key=lambda r: -r["iv"])
 
     # -- serializatsiya (SCD Type 2 uchun) -----------------------------------
@@ -245,6 +270,32 @@ class Scorecard:
             trained_on=d.get("trained_on", 0),
             metrics=d.get("metrics", {}),
         )
+
+
+def _unit(v: float, fmt: str) -> str:
+    """Bitta chegara qiymatini o'lchov birligida yozadi."""
+    if fmt == "ratio":
+        return f"{v * 100:.0f}%" if abs(v) >= 0.1 or v == 0 else f"{v * 100:.1f}%"
+    if fmt == "money":
+        if abs(v) >= 1_000_000:
+            return f"{v / 1_000_000:.1f} mln"
+        if abs(v) >= 1000:
+            return f"{v / 1000:.0f} ming"
+        return f"{v:.0f}"
+    if abs(v) >= 100:
+        return f"{v:.0f}"
+    return f"{v:.0f}" if float(v).is_integer() else f"{v:.1f}"
+
+
+def _human_range(lo, hi, fmt: str) -> str:
+    """(lo, hi) -> "4% dan kam" / "4% – 17%" / "52% dan yuqori"."""
+    if lo is None and hi is None:
+        return "barcha qiymatlar"
+    if lo is None:
+        return f"{_unit(hi, fmt)} dan kam"
+    if hi is None:
+        return f"{_unit(lo, fmt)} dan yuqori"
+    return f"{_unit(lo, fmt)} – {_unit(hi, fmt)}"
 
 
 def _val(row: dict, key: str, kind: str):

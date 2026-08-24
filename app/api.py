@@ -463,3 +463,17 @@ if WEB_DIR.exists():
     @app.get("/")
     def index() -> FileResponse:
         return FileResponse(str(WEB_DIR / "index.html"))
+
+    @app.get("/taqdimot")
+    def taqdimot() -> FileResponse:
+        """Taqdimot slaydlari SHU serverdan beriladi.
+
+        Nega muhim: graf slaydidagi «jonli» tugma ilovani iframe ichida ochadi.
+        Sessiya cookie'si SameSite=lax — BOSHQA origin (masalan alohida :8091
+        server) ichidagi iframe'ga u yuborilmaydi va graf bo'sh chiqadi.
+        Bir xil origin bo'lsa cookie ishlaydi va graf jonli ko'rinadi.
+        """
+        f = WEB_DIR.parent / "taqdimot.html"
+        if not f.exists():
+            raise HTTPException(404, "taqdimot.html topilmadi")
+        return FileResponse(str(f))
