@@ -77,6 +77,11 @@ class CreditEngine:
         with self._lock:
             self.version_id = db.save_scorecard(
                 self.conn, version, sc.to_dict(), sc.metrics, izoh)
+            # Nom band bo'lsa baza `v2#3` kabi suffiks bilan saqlaydi — UI
+            # chip "v2" ko'rsatib, jurnal "v2#3" yozmasin: nomni qaytarib olamiz.
+            row = db.get_version(self.conn, self.version_id)
+            if row is not None:
+                sc.version = row["version"]
             self.scorecard = sc
             self._cache[self.version_id] = sc
             self.graph.invalidate()      # WOE fazosi o'zgardi — qo'shnilar ham

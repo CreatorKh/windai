@@ -178,7 +178,7 @@ const PAGES = {
   mijoz: { nom: 'Mijoz kartasi', perm: 'mijoz:korish',
     tavsif: 'Bitta mijozning profili, 12 oylik pul oqimi, kreditlari va ariza tarixi.' },
   skorkarta: { nom: 'Skoring modeli', perm: 'skorkarta:korish',
-    tavsif: 'Qaysi belgi ballga qancha ta’sir qiladi: IV, koeffitsient va WOE bucket‘lari.' },
+    tavsif: 'Qaysi belgi ballga qancha ta’sir qiladi: IV, koeffitsient va WOE bucket’lari.' },
   whatif: { nom: 'Sinov maydoni', perm: 'simulyatsiya',
     tavsif: 'Daromad yoki summani o‘zgartiring — qaror qanday o‘zgarishini darhol ko‘ring.' },
   versiya: { nom: 'Versiyalar va audit', perm: 'skorkarta:korish',
@@ -278,7 +278,8 @@ function formatMoneyInput(el) {
 function initMoneyInputs() {
   $$('input.money').forEach(el => {
     formatMoneyInput(el);
-    el.addEventListener('input', () => { formatMoneyInput(el); liveCalc(); });
+    // qayta login da initForm yana chaqiriladi — listener ikkilanmasin
+    el.oninput = () => { formatMoneyInput(el); liveCalc(); };
   });
   $$('.quick').forEach(box => {
     const target = $(box.dataset.target);
@@ -317,8 +318,10 @@ function liveCalc() {
   if (f.applicant_id) {
     // Mavjud mijoz: jonli hisob ham BANK ma'lumotidan yursin — aks holda
     // chapda yashil 35%, qarorda esa boshqa raqam chiqadi.
-    const k = state.mavjudKarta && state.mavjudKarta.korsatkichlar;
-    if (!k) { box.innerHTML = ''; return; }     // karta hali yuklanmoqda
+    const d = state.mavjudKarta;
+    const k = d && d.applicant.applicant_id === f.applicant_id
+      ? d.korsatkichlar : null;
+    if (!k) { box.innerHTML = ''; return; }     // karta hali yuklanmagan/eski
     income = k.daromad_median;
     existing = k.mavjud_oylik_tolov;
   } else {
@@ -424,6 +427,7 @@ function setMode(mode) {
   if (mode === 'yangi') {
     $('#f-applicant').value = '';
     $('#mavjud-karta').innerHTML = '';
+    state.mavjudKarta = null;
   }
   liveCalc();
 }
@@ -433,6 +437,8 @@ function setMode(mode) {
  *  (backend baribir datasetdagi qiymatlarni ishlatadi). */
 async function loadMavjudKarta(id) {
   const box = $('#mavjud-karta');
+  state.mavjudKarta = null;                     // eski mijoz raqamlari qolmasin
+  liveCalc();
   if (!id) { box.innerHTML = ''; return; }
   box.innerHTML = '<div class="loading">yuklanmoqda…</div>';
   try {
@@ -1255,8 +1261,42 @@ function resetWhatIfControls() {
   $('#wi-muddat').value = state.base.muddat_oy;
 }
 
+/** Sinov maydoni bazasi. Mavjud mijoz rejimida readForm() ataylab qisqa
+ *  payload qaytaradi (daromad yo'q) — slayderlar esa daromadni o'zgartirishi
+ *  kerak. Shuning uchun bazani BANK KARTASIDAN sintez qilamiz: slayder
+ *  "daromad +80%" degani "shu profil, lekin daromadi 80% ko'p" bo'lib qoladi. */
+function whatIfBase() {
+  const f = readForm();
+  if (!f.applicant_id) return f;
+  const d = state.mavjudKarta;
+  if (!d || d.applicant.applicant_id !== f.applicant_id) return null;
+  const k = d.korsatkichlar, a = d.applicant;
+  return {
+    applicant_id: null,
+    yosh: a.yosh, oila_azolari: a.oila_azolari, bandlik: a.bandlik,
+    talim: a.talim, ish_staji_oy: a.ish_staji_oy,
+    mijoz_boldi_oy: a.mijoz_boldi_oy,
+    deklaratsiya_daromad: a.deklaratsiya_daromad || k.daromad_median,
+    oylik_daromad: k.daromad_median,
+    oylik_chiqim: Math.round(k.daromad_median * (k.sarf_ulushi || 0.6)),
+    naqd_yechish: Math.round(k.daromad_median * (k.naqd_ulushi || 0)),
+    mavjud_oylik_yuk: k.mavjud_oylik_tolov || 0,
+    mavjud_kredit_soni: k.faol_kreditlar || 0,
+    kredit_qoldigi: k.qarz_qoldigi || 0,
+    max_kechikish_kun: k.max_kechikish || 0,
+    sorlgan_summa: f.sorlgan_summa, muddat_oy: f.muddat_oy, maqsad: f.maqsad,
+  };
+}
+
 function initWhatIf() {
-  state.base = readForm();
+  const base = whatIfBase();
+  if (!base) {
+    $('#wi-natija').innerHTML = `<div class="card"><div class="empty">
+      Avval «Yangi ariza» bo\u2018limida mijozni tanlang yoki formani
+      to\u2018ldiring — sinov maydoni shu bazadan ishlaydi.</div></div>`;
+    return;
+  }
+  state.base = base;
   if (!state.whatIfReady) {
     ['#wi-inc', '#wi-sum', '#wi-yuk'].forEach(id => $(id).oninput = runWhatIf);
     $('#wi-muddat').onchange = runWhatIf;
@@ -1431,8 +1471,10 @@ async function loadVersions() {
    sudralganda fizika qayta qiziydi, tugun bosilganda yon panelda tafsilot,
    hover da bog'liq qirralar yoritiladi. Sarlavhada qatlam statistikasi:
    nima kesildi (cuts), nima ishlamadi (partial) — yashirmaymiz. */
+let grafCleanup = null;
 async function renderGraph(applicantId) {
   const wrap = $('#graf-wrap');
+  if (grafCleanup) { grafCleanup(); grafCleanup = null; }   // oldingi graf tozalansin
   let g;
   try {
     g = await api('/api/mijoz/' + encodeURIComponent(applicantId) + '/graf');
@@ -1584,10 +1626,22 @@ async function renderGraph(applicantId) {
     rafId = requestAnimationFrame(tick);
   };
   rafId = requestAnimationFrame(tick);
+  const onUp = () => {
+    if (drag !== null) nodes[drag]._pin = nodes[drag].root ? true : false;
+    drag = null;
+  };
+  addEventListener('pointerup', onUp);
+  addEventListener('pointercancel', onUp);
+  grafCleanup = () => {
+    cancelAnimationFrame(rafId);
+    removeEventListener('pointerup', onUp);
+    removeEventListener('pointercancel', onUp);
+  };
 
   // ── hover: bog'liq qirralarni yoritish ──
   gEls.forEach((el, i) => {
     el.addEventListener('pointerenter', () => {
+      if (drag !== null) return;
       const on = new Set(adj[nodes[i].id] || []);
       lineEls.forEach((l, li) => l.classList.toggle('ge-hot', on.has(li)));
       const nbr = new Set([nodes[i].id]);
@@ -1657,10 +1711,6 @@ async function renderGraph(applicantId) {
     nodes[drag].x = x; nodes[drag].y = y;
     reheat();
   });
-  addEventListener('pointerup', () => {
-    if (drag !== null) nodes[drag]._pin = nodes[drag].root ? true : false;
-    drag = null;
-  });
 }
 
 /* ================================================================== boot *//* ================================================================== boot */
@@ -1677,7 +1727,10 @@ async function afterLogin() {
 }
 
 /** Sessiya jonli ushlansin: foydalanuvchi ishlayotgan bo'lsa uzilib qolmasin. */
+let keepAliveOn = false;
 function keepAlive() {
+  if (keepAliveOn) return;                      // qayta login da ikkilanmasin
+  keepAliveOn = true;
   let last = Date.now();
   ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(e =>
     addEventListener(e, () => { last = Date.now(); }, { passive: true }));

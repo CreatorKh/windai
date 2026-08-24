@@ -22,9 +22,10 @@ from typing import Any, Dict, List, Optional
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from . import auth, db
 from .config import (APPROVE_SCORE, BASE_ODDS, BASE_SCORE, DATA_DIR, DB_PATH,
@@ -60,6 +61,10 @@ app = FastAPI(title="Kredit skoring va limit dvigateli",
 
 
 class ArizaForm(BaseModel):
+    # inf/NaN 500 bermasin (422 bo'lsin); pul maydonlariga real yuqori chegara —
+    # 1e308 kabi chekli-lekin-absurd qiymat median() da inf ga oshib ketardi.
+    model_config = ConfigDict(allow_inf_nan=False)
+
     """Veb-forma. Chegaralar Pydantic darajasida — noto'g'ri kirish API ga
     umuman kirmasin.
 
@@ -77,17 +82,17 @@ class ArizaForm(BaseModel):
     ish_staji_oy: float = Field(12, ge=0, le=720)
     oila_azolari: int = Field(2, ge=1, le=30)
     mijoz_boldi_oy: float = Field(0, ge=0, le=720)
-    deklaratsiya_daromad: float = Field(0, ge=0)
-    oylik_daromad: float = Field(0, ge=0)
-    oylik_chiqim: float = Field(0, ge=0)
-    naqd_yechish: float = Field(0, ge=0)
-    oy_oxiri_qoldiq: float = Field(0, ge=0)
+    deklaratsiya_daromad: float = Field(0, ge=0, le=1e13)
+    oylik_daromad: float = Field(0, ge=0, le=1e13)
+    oylik_chiqim: float = Field(0, ge=0, le=1e13)
+    naqd_yechish: float = Field(0, ge=0, le=1e13)
+    oy_oxiri_qoldiq: float = Field(0, ge=0, le=1e13)
     kirim_seriya: Optional[List[float]] = None
-    mavjud_oylik_yuk: float = Field(0, ge=0)
+    mavjud_oylik_yuk: float = Field(0, ge=0, le=1e13)
     mavjud_kredit_soni: int = Field(0, ge=0, le=50)
-    kredit_qoldigi: float = Field(0, ge=0)
+    kredit_qoldigi: float = Field(0, ge=0, le=1e13)
     max_kechikish_kun: float = Field(0, ge=0, le=3650)
-    sorlgan_summa: float = Field(0, ge=0)
+    sorlgan_summa: float = Field(0, ge=0, le=1e13)
     muddat_oy: float = Field(12, ge=1, le=360)
     maqsad: str = "iste'mol"
 
@@ -107,6 +112,27 @@ class RetrainReq(BaseModel):
 # ---------------------------------------------------------------------------
 # Autentifikatsiya va ruxsat
 # ---------------------------------------------------------------------------
+
+
+# 422 javobi ham JSON bo'lishi shart. Pydantic xato tafsilotiga foydalanuvchi
+# yuborgan QIYMATNI qo'shadi — u inf/NaN bo'lsa, javobning o'zi serializatsiya
+# bo'lmay 500 ga aylanardi ("Out of range float values are not JSON compliant").
+@app.exception_handler(RequestValidationError)
+async def validation_handler(request: Request, exc: RequestValidationError):
+    import math
+
+    def clean(v):
+        if isinstance(v, float) and not math.isfinite(v):
+            return str(v)
+        if isinstance(v, dict):
+            return {k: clean(x) for k, x in v.items()}
+        if isinstance(v, (list, tuple)):
+            return [clean(x) for x in v]
+        if isinstance(v, (str, int, bool)) or v is None:
+            return v
+        return str(v)                       # ctx ichidagi istalgan obyekt
+
+    return JSONResponse(status_code=422, content={"detail": clean(exc.errors())})
 
 
 def get_user(request: Request) -> Optional[dict]:
@@ -296,7 +322,7 @@ def simulyatsiya(form: ArizaForm,
 
 
 @app.get("/api/arizalar")
-def arizalar(limit: int = Query(100, le=1000), qaror: Optional[str] = None,
+def arizalar(limit: int = Query(100, ge=1, le=1000), qaror: Optional[str] = None,
              user: dict = Depends(require("qarorlar:korish"))) -> List[dict]:
     return db.recent_decisions(engine.conn, limit=limit, qaror=qaror)
 
@@ -405,7 +431,7 @@ def statistika(user: dict = Depends(require("qarorlar:korish"))) -> dict:
 
 
 @app.get("/api/jurnal")
-def jurnal(limit: int = 50,
+def jurnal(limit: int = Query(50, ge=1, le=1000),
            user: dict = Depends(require("jurnal:korish"))) -> dict:
     return {"zanjir": db.verify_chain(engine.conn),
             "statistika": db.stats(engine.conn),

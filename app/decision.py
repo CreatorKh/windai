@@ -151,7 +151,7 @@ def policy_rules(feats: dict, score: ScoreResult,
     dti, pti, pd = feats.get("dti", 0.0), feats.get("pti", 0.0), score.pd
     if dti > MAX_DTI:
         out.append(Rule("POL_DTI",
-                        f"So'ralgan summada DTI {_pct(dti)} — shift {_pct(MAX_DTI)}"
+                        f"So'ralgan summada DTI {_pct(dti)} — chegara {_pct(MAX_DTI)}"
                         + (f"; taklif: {_money(afford_limit)}" if afford_limit > 0
                            else "; to'lov qobiliyati qolmagan"),
                         REVIEW if afford_limit > 0 else DECLINE,
@@ -159,12 +159,12 @@ def policy_rules(feats: dict, score: ScoreResult,
     if pti > MAX_PTI:
         out.append(Rule("POL_PTI",
                         f"Yangi to'lov daromadning {_pct(pti)} ini oladi — "
-                        f"shift {_pct(MAX_PTI)}",
+                        f"chegara {_pct(MAX_PTI)}",
                         REVIEW if afford_limit > 0 else DECLINE,
                         "yumshoq" if afford_limit > 0 else "qattiq"))
     if pd > MAX_PD_APPROVE:
         out.append(Rule("POL_PD",
-                        f"Defolt ehtimoli {_pct(pd)} — shift {_pct(MAX_PD_APPROVE)}",
+                        f"Defolt ehtimoli {_pct(pd)} — chegara {_pct(MAX_PD_APPROVE)}",
                         DECLINE))
     if score.score < REVIEW_SCORE:
         out.append(Rule("POL_BALL",
@@ -264,6 +264,6 @@ def build_reason(qaror: str, score: ScoreResult, rules: List[Rule],
     pos = score.top_factors(3, sign=+1)
     detail = ", ".join(f"{c.label} ({c.points:+.0f} ball)" for c in pos)
     return (f"Ma'qullandi: ball {score.score:.0f} (PD {_pct(score.pd)}), "
-            f"DTI {_pct(feats.get('dti', 0.0))} shift ichida. "
+            f"DTI {_pct(feats.get('dti', 0.0))} chegara ichida. "
             f"Asosiy ijobiy omillar: {detail or 'barqaror profil'}. "
             f"Tasdiqlangan summa {_money(tavsiya)}.")
