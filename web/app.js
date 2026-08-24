@@ -161,7 +161,7 @@ async function renderChips() {
   try {
     const sc = await api('/api/scorecard');
     state.scorecard = sc;
-    const chips = [`<span class="chip">Skorkarta ${esc(sc.version)} · faol</span>`];
+    const chips = [`<span class="chip">Skorkarta ${esc(sc.version)} · amalda</span>`];
     if (can('skorkarta:orgatish')) {
       chips.push(`<span class="chip">AUC CV ${sc.metrics.auc_cv ?? '—'}</span>`);
     }
@@ -545,7 +545,7 @@ function applyPreset(name) {
   $$('.preset').forEach(b =>
     b.setAttribute('aria-pressed', String(b.dataset.preset === name)));
   liveCalc();
-  toast('Senariy to‘ldirildi — «Qaror olish» tugmasini bosing');
+  toast('Ssenariy to‘ldirildi — «Qaror olish» tugmasini bosing');
 }
 
 /* ------------------------------------------------------- qaror ko'rinishi */
@@ -664,7 +664,7 @@ function renderDecision(d, saved) {
           </div>
           <div class="card flat">
             <div class="card-head"><h3>Ko‘rsatkichlar</h3>
-              <span class="label">majburiy algoritmlar</span></div>
+              <span class="label">DTI · PTI · cash-flow</span></div>
             <div class="between"><span class="dim">DTI (jami yuk)</span>
               <b class="num">${pct(k.dti)}</b></div>
             <div class="between"><span class="dim">PTI (yangi to‘lov)</span>
@@ -794,7 +794,8 @@ async function loadUnderwriter() {
       <td class="r num">${pct(r.pd, 1)}</td>
       <td class="r num">${nf.format(Math.round(r.tavsiya_summa))}</td>
       <td class="code">${esc(r.kim || '—')}</td>
-      <td class="dim" style="max-width:300px">${esc(String(r.sabab).slice(0, 110))}…</td>
+      <td class="dim" style="max-width:300px">${esc(String(r.sabab).slice(0, 110))}${
+        String(r.sabab).length > 110 ? '…' : ''}</td>
     </tr>`).join('') : '<tr><td colspan="7" class="empty">qaror yo‘q</td></tr>';
 
   $$('#uw-table tbody tr.tr-click').forEach(tr => tr.onclick = () => {
@@ -860,7 +861,8 @@ function holdoutBlock(h, m) {
           ${row('RAD_ETILDI', 'Rad etildi')}
         </tbody></table></div>
         <p class="code faint" style="margin-top:8px">Ma’qullangan portfelning
-          defolt ulushi rad etilganidan bir necha barobar past.</p>
+          defolt ulushi rad etilganidan sezilarli past bo\u2018lishi kutiladi —
+          aniq raqamlar yuqoridagi jadvalda.</p>
       </div>
     </div>`;
 }

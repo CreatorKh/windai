@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WINDAI — Taqdimot</title>
+<style>
+  :root{
+    --base:#FDFCF8; --card:#fff; --raised:#F6F5F0; --hair:#E8E6DF;
+    --ink:#21201D; --dim:#575550; --faint:#8E8A83;
+    --accent:#D97757; --ok:#5c7f66; --bad:#B15E5E; --mid:#C88D4B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--base);color:var(--ink);
+    font:16px/1.55 Inter,-apple-system,"Segoe UI",system-ui,sans-serif;
+    overflow:hidden}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;
+    padding:6vh 8vw;max-width:1400px;margin:0 auto}
+  .slide.on{display:flex}
+  .tag{font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    font-weight:700;color:var(--accent);margin-bottom:14px}
+  h1{font-size:clamp(34px,5.2vw,64px);line-height:1.08;letter-spacing:-.03em;
+    font-weight:700;margin-bottom:18px}
+  h2{font-size:clamp(26px,3.6vw,44px);line-height:1.12;letter-spacing:-.025em;
+    font-weight:700;margin-bottom:22px}
+  h2 b{color:var(--accent)}
+  p.lead{font-size:clamp(16px,1.6vw,21px);color:var(--dim);max-width:62ch}
+  .grow{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr} .g3{grid-template-columns:1fr 1fr 1fr}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--card);border:1px solid var(--hair);border-radius:14px;
+    padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .kpi{font-size:clamp(30px,3.4vw,52px);font-weight:700;letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums;line-height:1.05}
+  .kpi small{font-size:.45em;font-weight:600;color:var(--faint)}
+  .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    font-weight:700;color:var(--faint);margin-bottom:8px}
+  .sub{font-size:13px;color:var(--dim);margin-top:8px}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .mid{color:var(--mid)}
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:26px 0}
+  .flow .step{background:var(--card);border:1px solid var(--hair);
+    border-radius:999px;padding:10px 18px;font-weight:600;font-size:14px;
+    white-space:nowrap}
+  .flow .step em{display:block;font-style:normal;font-size:11px;color:var(--faint);
+    font-weight:500}
+  .flow .arr{color:var(--accent);font-weight:700}
+  ul.big{list-style:none;font-size:clamp(15px,1.5vw,19px)}
+  ul.big li{padding:12px 0 12px 40px;position:relative;border-top:1px solid var(--hair)}
+  ul.big li:first-child{border-top:0}
+  ul.big li:before{content:"";position:absolute;left:6px;top:19px;width:14px;
+    height:14px;border-radius:4px;background:var(--accent)}
+  ul.big li b{font-weight:700}
+  .foot{display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+  .num{position:fixed;right:22px;bottom:18px;font-size:12px;color:var(--faint);
+    font-variant-numeric:tabular-nums;z-index:5}
+  .bars{display:flex;align-items:flex-end;gap:14px;height:200px;margin-top:14px}
+  .bars > div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+    align-items:center;gap:8px;height:100%}
+  .bars i{display:block;width:100%;border-radius:8px 8px 0 0;background:var(--bad)}
+  .bars span{font-size:13px;font-weight:700}
+  .bars em{font-style:normal;font-size:11px;color:var(--faint);text-align:center}
+  .pill{display:inline-block;background:var(--raised);border:1px solid var(--hair);
+    border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;
+    margin:4px 6px 0 0}
+  .mark{width:56px;height:56px;margin-bottom:22px}
+  table{border-collapse:collapse;width:100%;font-size:15px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--hair)}
+  th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+  .hint{position:fixed;left:22px;bottom:18px;font-size:12px;color:var(--faint)}
+  kbd{background:var(--raised);border:1px solid var(--hair);border-radius:5px;
+    padding:1px 7px;font-family:inherit}
+</style>
+</head>
+<body>
+
+<!-- 1 · TITUL -->
+<section class="slide on">
+  <div class="grow">
+    <svg class="mark" viewBox="0 0 32 32"><mask id="m"><rect width="32" height="32" fill="#fff"/>
+      <path d="M4 3 L16 16 L4 29 Z M28 3 L16 16 L28 29 Z" fill="#000"/></mask>
+      <rect width="32" height="32" rx="7" fill="#D97757" mask="url(#m)"/></svg>
+    <div class="tag">CBU Coding Hackathon 2026 · Mavzu A2 · Smart Banking</div>
+    <h1>WINDAI</h1>
+    <p class="lead" style="font-size:clamp(20px,2.2vw,28px);color:var(--ink);font-weight:600">
+      Tushuntiriladigan kredit skoring va limit dvigateli</p>
+    <p class="lead" style="margin-top:14px">Har bir qaror — sababi bilan.
+      Rad javobi ham, ma'qullash ham omillar hissasi bilan izohlanadi.</p>
+  </div>
+  <div class="foot"><span>WINDAI jamoasi</span><span>2026</span></div>
+</section>
+
+<!-- 2 · MUAMMO -->
+<section class="slide">
+  <div class="tag">Muammo</div>
+  <h2>Qaror 30 soniyada chiqishi kerak —<br>lekin <b>«nega?»</b> savoliga javob bilan</h2>
+  <div class="grow">
+    <div class="grid g3">
+      <div class="card"><div class="lbl">Mijoz</div>
+        <p>«Nega menga rad etildi? Nima qilsam ma'qullanadi?»</p></div>
+      <div class="card"><div class="lbl">Regulyator</div>
+        <p>«Bu qarorni kim, qachon, qaysi model bilan chiqargan? Isbotlang.»</p></div>
+      <div class="card"><div class="lbl">Bank</div>
+        <p>«Model aniq bo'lsin, lekin qora quti emas — underwriter unga ishonishi kerak.»</p></div>
+    </div>
+    <p class="lead" style="margin-top:26px">Mavzuning e'lon qilingan tuzog'i:
+      <b>faqat yakuniy ballni ko'rsatib «nega»ni yashirish — talab bajarilmagani.</b>
+      Biz tizimni aynan shu savol atrofida qurdik.</p>
+  </div>
+</section>
+
+<!-- 3 · YECHIM -->
+<section class="slide">
+  <div class="tag">Yechim</div>
+  <h2>CSV dan qarorgacha — <b>har qadami ko'rinadigan</b> quvur</h2>
+  <div class="grow">
+    <div class="flow">
+      <span class="step">12 oylik oqim + kreditlar<em>DTI · PTI · cash-flow</em></span>
+      <span class="arr">→</span>
+      <span class="step">WOE / IV binning<em>har belgi «xavf birligi»da</em></span>
+      <span class="arr">→</span>
+      <span class="step">Logistik regressiya<em>sof stdlib, damped Newton</em></span>
+      <span class="arr">→</span>
+      <span class="step">Ball + PD<em>hissalar yig'indisi</em></span>
+      <span class="arr">→</span>
+      <span class="step">Qoidalar + Limit<em>binary search</em></span>
+      <span class="arr">→</span>
+      <span class="step">Ikki tildagi izoh<em>mijoz + regulyator</em></span>
+    </div>
+    <div class="grid g3">
+      <div class="card"><div class="lbl">Nega WOE</div>
+        <p>Ball — omillar hissasining <b>aniq arifmetik yig'indisi</b>.
+        «DTI uchun −20, staj uchun +10» — approksimatsiya emas, formulaning o'zi.</p></div>
+      <div class="card"><div class="lbl">Nega stdlib</div>
+        <p>Yadro bog'liqliksiz: numpy/sklearn yo'q. Versiya konflikti,
+        buzilgan pickle — bu sinf muammolar bizda mavjud emas.</p></div>
+      <div class="card"><div class="lbl">Nega binary search</div>
+        <p>Limit — «to'lov qobiliyati saqlanadigan eng katta summa».
+        Monoton predikat ustida 13 qadamda topiladi.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · NATIJALAR -->
+<section class="slide">
+  <div class="tag">Natijalar · yashirin javob kaliti bilan tekshirilgan</div>
+  <h2>AUC 0.7675 — bu mumkin bo'lganning <b>95%</b> i</h2>
+  <div class="grow">
+    <div class="grid g4">
+      <div class="card"><div class="lbl">AUC-ROC (holdout)</div>
+        <div class="kpi">0.7675</div>
+        <div class="sub">540 ko'rilmagan ariza</div></div>
+      <div class="card"><div class="lbl">Gini</div>
+        <div class="kpi">0.5349</div>
+        <div class="sub">KS 0.4796</div></div>
+      <div class="card"><div class="lbl">Nazariy potolok</div>
+        <div class="kpi">0.8042</div>
+        <div class="sub">haqiqiy PD ning o'zi beradigan AUC — undan oshib bo'lmaydi</div></div>
+      <div class="card" style="border-color:var(--accent)"><div class="lbl">Potolokdan</div>
+        <div class="kpi ok">95%</div>
+        <div class="sub">qolgan 5% — hech kim tuta olmaydigan shovqin</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <div class="lbl">Qaror sifati — haqiqiy defolt ulushi</div>
+        <table>
+          <tr><th>Qaror</th><th class="r">Ariza</th><th class="r">Haqiqiy defolt</th></tr>
+          <tr><td>Ma'qullandi</td><td class="r">151</td><td class="r ok"><b>4.0%</b></td></tr>
+          <tr><td>Qo'lda ko'rib chiqish</td><td class="r">267</td><td class="r mid">5.6%</td></tr>
+          <tr><td>Rad etildi</td><td class="r">122</td><td class="r bad"><b>28.7%</b></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="lbl">Ball haqiqatan ajratadi — banddagi haqiqiy defolt</div>
+        <div class="bars">
+          <div><span class="bad">39%</span><i style="height:78%"></i><em>&lt; 580</em></div>
+          <div><span class="mid">12%</span><i style="height:24%;background:var(--mid)"></i><em>580–600</em></div>
+          <div><span>5%</span><i style="height:10%;background:var(--ok)"></i><em>600–630</em></div>
+          <div><span class="ok">4%</span><i style="height:8%;background:var(--ok)"></i><em>≥ 630</em></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · IZOHLANUVCHANLIK -->
+<section class="slide">
+  <div class="tag">Asosiy talab</div>
+  <h2>Bitta qaror — <b>ikki tilda</b>, plus prezedentlar</h2>
+  <div class="grow">
+    <div class="grid g3">
+      <div class="card">
+        <div class="lbl">Mijoz tilida</div>
+        <p style="font-size:15px">«So'ragan 100 mln ni bera olmaymiz, lekin
+        <b>13.2 mln to'lov qobiliyatingizga mos</b> — oylik to'lov 724 528 so'm.»</p>
+        <p class="sub">+ «Nima qilsam bo'ladi?» — aniq qadamlar:
+        summani kamaytiring, muddatni uzaytiring, tushumni bankka o'tkazing.</p>
+      </div>
+      <div class="card">
+        <div class="lbl">Regulyator tilida</div>
+        <p style="font-size:15px">DTI 124% &gt; chegara 50% · PD 22.9% &gt; 20% ·
+        omillar: qarz yuki <b>−20</b>, daromad <b>−11</b> · yakuniy ball 575 =
+        neytral 599 + hissalar.</p>
+        <p class="sub">Hissalar yig'indisi = ball. Testda isbotlangan ayniyat.</p>
+      </div>
+      <div class="card">
+        <div class="lbl">Prezedentlar grafi</div>
+        <p style="font-size:15px">WOE fazosida <b>eng o'xshash 8 mijoz</b> va ularning
+        haqiqiy taqdiri: 7 to'lagan, 1 defolt. Model raqami + jonli prezedentlar —
+        ikki mustaqil usul, bitta xulosa.</p>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:24px">Skoring formulasi ochiq: har belgi uchun
+      IV, koeffitsient va WOE bucket'lar alohida ekranda — «qora quti» degan savol qolmaydi.</p>
+  </div>
+</section>
+
+<!-- 6 · ISHONCH -->
+<section class="slide">
+  <div class="tag">Baza va ishonch</div>
+  <h2>Qarorni <b>o'zgartirib bo'lmaydi</b> — va buni isbotlaymiz</h2>
+  <div class="grow">
+    <div class="grid g2">
+      <div class="card">
+        <div class="lbl">O'zgarmas jurnal — ikki qavat himoya</div>
+        <ul class="big">
+          <li><b>SQLite triggerlar:</b> UPDATE/DELETE fizik taqiqlangan</li>
+          <li><b>SHA-256 zanjir:</b> har yozuvda oldingisining hashi —
+            bitta satr almashsa zanjir uziladi (testda buzib ko'rsatamiz)</li>
+          <li><b>«Kim» hash ichida:</b> qaror chiqargan xodimni ham
+            keyin almashtirib bo'lmaydi</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="lbl">Versiyalar va rollar</div>
+        <ul class="big">
+          <li><b>SCD Type 2:</b> eski skorkarta o'chmaydi — istalgan eski
+            qarorni o'sha davr modeli bilan qayta hisoblaymiz</li>
+          <li><b>4 rol:</b> menejer → underwriter → risk → admin;
+            har biriga o'z ekranlari, qolgani qulf ostida</li>
+          <li><b>150 avtotest</b> — jurnal buzilishi, rol chegaralari,
+            ko'p oqimlilik ham qamrab olingan</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · YAKUN -->
+<section class="slide">
+  <div class="tag">Yakun</div>
+  <h2>Bir buyruq bilan ishga tushadi</h2>
+  <div class="grow">
+    <div class="grid g2">
+      <div class="card">
+        <div class="lbl">Ishga tushirish</div>
+        <p style="font-family:ui-monospace,Menlo,monospace;font-size:17px;
+          background:var(--raised);border-radius:10px;padding:14px 16px">
+          make run &nbsp;·&nbsp; docker compose up</p>
+        <p class="sub">Demo hisoblar login ekranining o'zida — hakam har rolni
+        bir bosishda sinaydi. Yashirin dataset uchun: <b>DATA_DIR=… make batch</b> —
+        format o'zgarmaydi.</p>
+      </div>
+      <div class="card">
+        <div class="lbl">Raqamlar bilan</div>
+        <span class="pill">AUC 0.7675 = potolokning 95%</span>
+        <span class="pill">540/540 test arizasi natija faylida</span>
+        <span class="pill">150 avtotest</span>
+        <span class="pill">Yadro — sof stdlib</span>
+        <span class="pill">5 artefakt: kod · README · DECISIONS · ERD · testlar</span>
+        <span class="pill">3 bonus algoritm + 2 bonus ekran</span>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:26px"><b>WINDAI</b> — qaror 30 soniyada,
+      sababi shu zahoti, tarixi esa abadiy o'zgarmas. Savollaringizga tayyormiz.</p>
+  </div>
+  <div class="foot"><span>WINDAI jamoasi · CBU Coding Hackathon 2026</span>
+    <span>rahmat!</span></div>
+</section>
+
+<div class="num"><span id="cur">1</span> / <span id="tot"></span></div>
+<div class="hint"><kbd>→</kbd> keyingi · <kbd>←</kbd> oldingi · <kbd>F</kbd> to'liq ekran</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  document.getElementById('tot').textContent = slides.length;
+  let i = 0;
+  function go(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('on', k === i));
+    document.getElementById('cur').textContent = i + 1;
+  }
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(i + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(i - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key.toLowerCase() === 'f') {
+      document.fullscreenElement ? document.exitFullscreen()
+        : document.documentElement.requestFullscreen();
+    }
+  });
+  addEventListener('click', e => {
+    if (e.clientX > innerWidth / 2) go(i + 1); else go(i - 1);
+  });
+</script>
+</body>
+</html>
