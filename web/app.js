@@ -411,7 +411,10 @@ async function initForm() {
       $('#ariza-natija').innerHTML = renderDecision(res, true);
       $('#live-status').textContent =
         `Qaror: ${(VERDICT[res.qaror] || {}).text || res.qaror}, ball ${res.ball.toFixed(0)}`;
-      if (innerWidth < 1120) $('#ariza-natija').scrollIntoView({ behavior: 'smooth' });
+      // Forma uzun — foydalanuvchi pastda, natija esa o'ng ustun TEPASIDA
+      // chiziladi. Har doim natijaga suramiz, aks holda qaror qayerda
+      // chiqqani ko'rinmaydi.
+      $('#ariza-natija').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (e) {
       $('#ariza-natija').innerHTML = `<div class="err">Xato: ${esc(e.message)}</div>`;
     } finally { btn.disabled = false; }

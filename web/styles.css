@@ -592,3 +592,12 @@ html.dark{--flow-inc:#35d07a;--flow-exp:#ffb020;--flow-cash:#ff6b5f}
   background:var(--raised);font-size:12px;line-height:17px;color:var(--dim);
   border-radius:var(--r-sm)}
 input[type=range]{accent-color:var(--accent);height:22px}
+
+/* natijaga scroll: yopishqoq shapka ostida qolib ketmasin + ko'z darhol topsin */
+#ariza-natija{scroll-margin-top:118px}
+#ariza-natija .verdict-box{animation:vflash .9s ease 1}
+@keyframes vflash{
+  0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}
+  100%{box-shadow:0 0 0 14px transparent}
+}
+@media (prefers-reduced-motion:reduce){#ariza-natija .verdict-box{animation:none}}
