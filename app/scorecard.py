@@ -79,16 +79,30 @@ CUTS_OVERRIDE: Dict[str, List[float]] = {
 class FactorContribution:
     """Bitta omilning qarordagi ulushi — UI shu obyektni ko'rsatadi."""
 
-    __slots__ = ("key", "label", "value", "bin_label", "woe", "beta", "points", "fmt")
+    __slots__ = ("key", "label", "value", "bin_label", "woe", "beta", "points",
+                 "fmt", "human")
 
-    def __init__(self, key, label, value, bin_label, woe, beta, points, fmt):
+    def __init__(self, key, label, value, bin_label, woe, beta, points, fmt,
+                 human=""):
         self.key, self.label, self.value = key, label, value
         self.bin_label, self.woe, self.beta = bin_label, woe, beta
         self.points, self.fmt = points, fmt
+        self.human = human or bin_label
+
+    def _qiymat(self) -> str:
+        """Mijozning HAQIQIY qiymati o'lchov birligida ("12.4 mln")."""
+        if self.fmt == "text":
+            return str(self.value or "")
+        try:
+            return _unit(float(self.value), self.fmt)
+        except (TypeError, ValueError):
+            return ""
 
     def to_dict(self) -> dict:
         return {"key": self.key, "label": self.label, "value": self.value,
-                "bin": self.bin_label, "woe": round(self.woe, 4),
+                "bin": self.bin_label, "human": self.human,
+                "qiymat": self._qiymat(),
+                "woe": round(self.woe, 4),
                 "beta": round(self.beta, 4), "points": round(self.points, 1),
                 "fmt": self.fmt}
 
@@ -203,6 +217,10 @@ class Scorecard:
                 key=key, label=label, value=feats.get(key),
                 bin_label=b.label, woe=w, beta=beta,
                 points=-FACTOR * beta * w, fmt=fmt,
+                human=(b.label if kind == "categorical"
+                       else _human_range(
+                           None if b.lo in (None, -math.inf) else b.lo,
+                           None if b.hi in (None, math.inf) else b.hi, fmt)),
             ))
 
         raw = neutral + sum(c.points for c in contributions)

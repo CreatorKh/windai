@@ -569,14 +569,19 @@ function gauge(score) {
       <span>700</span></div>`;
 }
 
+/* Omillar hissasi. Ikkinchi qatorda mijozning HAQIQIY qiymati va u tushgan
+   guruh o'lchov birligida yoziladi ("8.0 mln dan yuqori"), xom WOE emas —
+   u faqat sichqoncha ustida (title) qoladi. */
 function contribRows(omillar) {
   const max = Math.max(1, ...omillar.map(o => Math.abs(o.points)));
   return omillar.map(o => {
     const w = Math.abs(o.points) / max * 50;
     const pos = o.points > 0;
-    return `<div class="contrib">
+    const guruh = o.human || o.bin;
+    return `<div class="contrib" title="WOE ${o.woe.toFixed(3)} · β ${
+        (o.beta ?? 0).toFixed(3)}">
       <div><span class="nm">${esc(o.label)}</span>
-        <span class="bin">${esc(o.bin)} · WOE ${o.woe.toFixed(2)}</span></div>
+        <span class="bin">${esc(guruh)}${o.qiymat ? ' · ' + esc(o.qiymat) : ''}</span></div>
       <div class="bar"><span class="mid"></span>
         <i class="${pos ? 'pos' : 'neg'}" style="${
           pos ? `left:50%;width:${w}%` : `right:50%;width:${w}%`}"></i></div>
@@ -640,7 +645,7 @@ function renderDecision(d, saved) {
     </div>` : ''}
 
     <details class="tech">
-      <summary>Texnik tafsilot — underwriter va regulyator uchun</summary>
+      <summary>Texnik tafsilot — bank xodimi uchun</summary>
       <div class="tech-body">
         <div>
           <div class="between" style="margin-bottom:4px">
