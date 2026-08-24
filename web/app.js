@@ -980,15 +980,22 @@ async function loadMijozTab(arg) {
   const inp = $('#mk-search');
   if (!inp.dataset.wired) {
     inp.dataset.wired = '1';
+    // "Tozalash" faqat chindan tozalanadigan narsa bo'lganda ko'rinadi —
+    // bo'sh maydon yonidagi tugma savol tug'diradi ("nimani tozalayman?").
+    const clearBtn = $('#mk-clear');
     inp.oninput = () => {
+      clearBtn.hidden = !inp.value.trim();
       clearTimeout(mkTimer);
       mkTimer = setTimeout(() => searchClients(inp.value.trim()), 250);
     };
-    $('#mk-clear').onclick = () => {
-      inp.value = ''; $('#mk-results').innerHTML = '';
+    clearBtn.onclick = () => {
+      inp.value = '';
+      $('#mk-results').innerHTML = '';
+      clearBtn.hidden = true;
+      inp.focus();
     };
   }
-  if (arg) { inp.value = arg; await renderClientCard(arg); }
+  if (arg) { inp.value = arg; $('#mk-clear').hidden = false; await renderClientCard(arg); }
   else if (!state.mijoz) $('#mk-results').innerHTML = '';
 }
 
