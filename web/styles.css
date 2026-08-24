@@ -601,3 +601,9 @@ input[type=range]{accent-color:var(--accent);height:22px}
   100%{box-shadow:0 0 0 14px transparent}
 }
 @media (prefers-reduced-motion:reduce){#ariza-natija .verdict-box{animation:none}}
+
+/* fokus=graf: taqdimot ichida jonli graf — sahifadan faqat graf kartasi qoladi */
+body.fokus-graf header.top, body.fokus-graf .navbar,
+body.fokus-graf .page-head, body.fokus-graf #tab-mijoz > .card:first-child,
+body.fokus-graf #mk-card .stack > :not(:first-child){display:none!important}
+body.fokus-graf .shell{padding:10px 14px;max-width:none}

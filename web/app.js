@@ -1879,6 +1879,8 @@ async function demoScript() {
     // skrinshot uchun graf kartasi sahifa boshiga chiqadi
     const card = $('#graf-wrap')?.closest('.card');
     if (card) { card.parentElement.prepend(card); scrollTo(0, 0); }
+    // fokus rejimi: taqdimot iframe'i uchun faqat graf kartasi ko'rinadi
+    if (q.get('fokus') === 'graf') document.body.classList.add('fokus-graf');
   } else if (amal === 'whatif') {
     location.hash = '#whatif';
     await s(2200);
