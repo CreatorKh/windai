@@ -1125,8 +1125,16 @@ async function renderClientCard(id) {
       </div>
 
       <div class="card">
-        <div class="card-head"><h3>Aloqalar grafi</h3>
+        <div class="card-head"><h3>O‘xshash mijozlar grafi</h3>
           <span class="label" id="graf-status">yuklanmoqda…</span></div>
+        <p class="data dim" style="margin-bottom:10px">Savol: <b>xuddi shunday
+          profilli mijozlar qanday to‘lagan?</b> Markazda — mijoz. Atrofida —
+          risk-profili unga eng yaqin 8 mijoz (skorkartaning o‘sha 15 belgisi
+          bo‘yicha): <b style="color:var(--risk-low)">yashil — to‘lagan</b>,
+          <b style="color:var(--risk-hi)">qizil — defolt qilgan</b>. Chiziq
+          ustida — qaysi belgilar bo‘yicha o‘xshash. Punktir — qo‘shnilar
+          bir-biriga ham o‘xshash (zich klaster). Bu ballning vizual isboti:
+          atrof qizarsa — bunday profillar haqiqatan defolt qiladi.</p>
         <div id="graf-chips" class="row" style="margin-bottom:10px;flex-wrap:wrap"></div>
         <div id="graf-wrap"><div class="loading">graf qurilmoqda…</div></div>
         <div class="legend-dots" style="margin-top:10px">
