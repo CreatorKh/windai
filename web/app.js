@@ -602,6 +602,8 @@ function renderDecision(d, saved) {
   return `
   <div class="stack">
     <div class="verdict-box ${esc(m.ohang)}">
+      ${saved ? '' : `<div class="sim-strip">Sinov rejimi — bu natija jurnalga
+        yozilmadi va hech narsani tasdiqlamaydi</div>`}
       <div class="verdict-grid">
         <div>
           <h2>${esc(m.sarlavha)}</h2>

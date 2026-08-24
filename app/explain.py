@@ -112,7 +112,10 @@ HUMAN: Dict[str, Dict[str, Phrase]] = {
                         f"xarajatlaringiz daromadning {foiz(f['burn_ratio'])} ini "
                         f"tashkil qiladi"),
         "-": lambda f: (f"xarajatlaringiz daromadning {foiz(f['burn_ratio'])} ini "
-                        f"tashkil qiladi — erkin mablag' kam qoladi"),
+                        f"tashkil qiladi"
+                        + (" — erkin mablag' kam qoladi"
+                           if f.get("free_cash", 0) < f.get("income_used", 1) * 0.2
+                           else "")),
     },
     "cash_ratio": {
         "+": lambda f: "pul harakatingiz shaffof, naqd yechish kam",
@@ -300,10 +303,19 @@ def next_steps(decision) -> List[str]:
     # 3) Mavjud yuk. `active_count` sharti olib tashlandi: yuk kredit
     # registridan emas, ariza maydonidan ham kelishi mumkin (boshqa bank).
     # Knock-out kechikish bo'lsa bu maslahat o'rinsiz — asosiy to'siq boshqa.
-    if (f.get("dti_current", 0) > 0.25
-            and f.get("max_delinq", 0) < KO_MAX_DELINQ_DAYS):
-        steps.append("Mavjud oylik to'lovlaringiz daromadga nisbatan og'ir — "
-                     "bittasini yopsangiz, qarz yuki pasayadi va limit oshadi.")
+    # 26% yukni "og'ir" deb bo'lmaydi: 40% dan past — neytral taklif,
+    # ma'qullangan qarorda esa umuman imkoniyat ohangida.
+    dcur = f.get("dti_current", 0)
+    if dcur > 0.25 and f.get("max_delinq", 0) < KO_MAX_DELINQ_DAYS:
+        if decision.qaror == "MAQULLANDI":
+            steps.append("Mavjud kreditlardan birini yopsangiz, keyingi safar "
+                         "limit yana ham yuqori bo'ladi.")
+        elif dcur > 0.4:
+            steps.append("Mavjud oylik to'lovlaringiz daromadga nisbatan og'ir — "
+                         "bittasini yopsangiz, qarz yuki pasayadi va limit oshadi.")
+        else:
+            steps.append("Mavjud kreditlardan birini yopsangiz, qarz yuki "
+                         "pasayadi va limit oshadi.")
 
     # 4) Knock-out sabablari — vaqt talab qiladigan maslahat.
     if str(f.get("bandlik", "")).strip().lower() in UNEMPLOYED_LABELS:

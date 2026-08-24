@@ -586,3 +586,9 @@ html.dark{--flow-inc:#35d07a;--flow-exp:#ffb020;--flow-cash:#ff6b5f}
 .graf-ctl select{height:26px;width:auto;padding:0 22px 0 8px}
 .graf g.gn-open circle{stroke:var(--accent-text);stroke-width:2.5;
   stroke-dasharray:3 2}
+
+/* sinov rejimi belgisi + slayderlar tema rangida */
+.sim-strip{margin:-4px 0 12px;padding:6px 10px;border-left:3px solid var(--rule);
+  background:var(--raised);font-size:12px;line-height:17px;color:var(--dim);
+  border-radius:var(--r-sm)}
+input[type=range]{accent-color:var(--accent);height:22px}
