@@ -10,6 +10,7 @@ body{background:var(--base);color:var(--ink);overflow:hidden;
 .slide{position:absolute;inset:0;display:none;flex-direction:column;
   padding:2.6vh 3vw 4vh;max-width:1660px;margin:0 auto}
 .slide.on{display:flex}
+.tag.big{font-size:clamp(16px,1.7vw,22px);letter-spacing:.1em}
 .tag{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;
   color:var(--accent);margin-bottom:7px}
 h1{font-size:clamp(36px,5.4vw,66px);line-height:1.05;letter-spacing:-.03em;font-weight:700}
@@ -117,7 +118,8 @@ td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
 /* ── ички жонли граф (10) ── */
 .graf-box{display:flex;flex-direction:column;min-height:0;background:var(--raised);
   border:1px solid var(--hair);border-radius:14px;padding:10px 12px 8px}
-#gsvg{flex:1;min-height:0;width:100%;touch-action:none;cursor:default}
+#gsvg{flex:1;min-height:260px;width:100%;touch-action:none;cursor:default;
+  user-select:none;-webkit-user-select:none}
 #gsvg line{stroke:var(--hair)}
 #gsvg line.sim{stroke:#6f6b64}
 #gsvg line.mesh{stroke:var(--rule);stroke-dasharray:3 5;opacity:.35}
@@ -197,7 +199,7 @@ td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
   <div><b>0.7675</b><span>AUC — чегаранинг 95% и</span></div>
   <div><b>4.0% / 28.7%</b><span>маъқулланган / рад дефолти</span></div>
 </div></div>
-<div class="foot"><span>WINDAI жамоаси</span><span>2026</span></div></section><section class="slide"><div class="tag">Муаммо</div><h2>Кредит қарори <b>кунлаб</b> кутилади, мижоз эса кетиб қолади</h2><div class="grow"><div class="grid g3"><div class="card"><p>Ариза қўлда кўрилади: банк тушуми, қарз юки, кредит тарихи — ҳар бири алоҳида текширилади</p></div><div class="card"><p>ТЗ да битта қарорга <b>30 сония</b> берилган, амалда мижоз кунлаб жавоб кутади</p></div><div class="card"><p>Сумма кўтармаса — тўғридан-тўғри рад: тўлашга қодир мижоз рақобатчига кетади</p></div><div class="card"><p>Қарор нега шундай чиққани ёзилмайди — шикоятга ҳам, текширувга ҳам асосланган жавоб йўқ</p></div><div class="card"><p>Андеррайтернинг қиммат вақти аниқ, шубҳасиз аризаларга ҳам сарфланади</p></div></div></div></section><section class="slide"><div class="tag">Қиймат</div><h2>Битта қарор — <b>учта аудитория</b> учун фойда</h2><div class="grow"><div class="grid g3"><div class="card"><p>Мижоз: жавоб дарҳол, рад бўлса ҳам сабаби <b>содда тилда</b> айтилади</p></div><div class="card"><p>Менежер: қуруқ балл эмас, <b>ҳар омилнинг ҳиссаси рақамда</b> — мижозга тушунтириб бера олади</p></div><div class="card"><p>Андеррайтер: вақти фақат чегаравий ҳолатларга кетади, ишончлилари автомат ўтади</p></div><div class="card"><p>Банк: рад ўрнига <b>камайтирилган таклиф</b> — кетадиган мижознинг бир қисми сақланиб қолади</p></div><div class="card"><p>Риск ва аудит: ҳар қарор ўзгармас журналда, исталган пайт қайта текширилади</p></div></div></div></section><section class="slide"><div class="tag">Иш оқими</div>
+<div class="foot"><span>WINDAI жамоаси</span><span>2026</span></div></section><section class="slide"><div class="tag big">Муаммо</div><h2>Кредит қарори <b>кунлаб</b> кутилади, мижоз эса кетиб қолади</h2><div class="grow"><div class="grid g3"><div class="card"><p>Ариза қўлда кўрилади: банк тушуми, қарз юки, кредит тарихи — ҳар бири алоҳида текширилади</p></div><div class="card"><p>ТЗ да битта қарорга <b>30 сония</b> берилган, амалда мижоз кунлаб жавоб кутади</p></div><div class="card"><p>Сумма кўтармаса — тўғридан-тўғри рад: тўлашга қодир мижоз рақобатчига кетади</p></div><div class="card"><p>Қарор нега шундай чиққани ёзилмайди — шикоятга ҳам, текширувга ҳам асосланган жавоб йўқ</p></div><div class="card"><p>Андеррайтернинг қиммат вақти аниқ, шубҳасиз аризаларга ҳам сарфланади</p></div></div></div></section><section class="slide"><div class="tag">Қиймат</div><h2>Битта қарор — <b>учта аудитория</b> учун фойда</h2><div class="grow"><div class="grid g3"><div class="card"><p>Мижоз: жавоб дарҳол, рад бўлса ҳам сабаби <b>содда тилда</b> айтилади</p></div><div class="card"><p>Менежер: қуруқ балл эмас, <b>ҳар омилнинг ҳиссаси рақамда</b> — мижозга тушунтириб бера олади</p></div><div class="card"><p>Андеррайтер: вақти фақат чегаравий ҳолатларга кетади, ишончлилари автомат ўтади</p></div><div class="card"><p>Банк: рад ўрнига <b>камайтирилган таклиф</b> — кетадиган мижознинг бир қисми сақланиб қолади</p></div><div class="card"><p>Риск ва аудит: ҳар қарор ўзгармас журналда, исталган пайт қайта текширилади</p></div></div></div></section><section class="slide"><div class="tag">Иш оқими</div>
 <h2>Аризадан <b>ўзгармас журналгача</b> — беш қадам</h2>
 <div class="grow"><div class="flowwrap"><svg class="flowsvg" viewBox="0 0 1180 300" role="img" aria-label="Иш оқими">
   <defs>
@@ -332,11 +334,15 @@ function initGraf(){
     raf=requestAnimationFrame(tick);};
   let drag=null;
   const pos=ev=>{const r=svg.getBoundingClientRect();const pt=ev.touches?ev.touches[0]:ev;
+    // Нол ўлчамли контейнерда бўлиш Infinity беради — тугун экрандан учиб
+    // кетади. Бундай ҳолатда координатани ўзгартирмаймиз.
+    if(!(r.width>1&&r.height>1))return null;
     return [(pt.clientX-r.left)*W/r.width,(pt.clientY-r.top)*H/r.height];};
   Gn.forEach((el,i)=>el.addEventListener('pointerdown',ev=>{
     drag=i;N[i].pin=true;ev.preventDefault();ev.stopPropagation();}));
   svg.addEventListener('pointermove',ev=>{if(drag===null)return;
-    const [x,y]=pos(ev);N[drag].x=x;N[drag].y=y;reheat();});
+    const p=pos(ev);if(!p)return;
+    N[drag].x=p[0];N[drag].y=p[1];reheat();});
   addEventListener('pointerup',()=>{if(drag!==null)N[drag].pin=N[drag].root;drag=null;});
   paint();raf=requestAnimationFrame(tick);
 }
@@ -375,9 +381,9 @@ function openLive(btn){
      +'граф шу слайд ичида ишлайди.</div>';
   },7000);
 }
+/* Слайд фақат стрелкалар билан алмашади: тақдимот пайтида тасодифий
+   босиш сакраб кетмасин. Граф тугунларини суриш ва тугмалар ишлайверади. */
 addEventListener('click',e=>{
  const b=e.target.closest('.live');
- if(b){openLive(b);e.stopPropagation();return;}
- if(e.target.closest('a,button,select,input,iframe,.gloss'))return;
- e.clientX>innerWidth/2?go(i+1):go(i-1);});
+ if(b){openLive(b);e.stopPropagation();}});
 </script></body></html>
